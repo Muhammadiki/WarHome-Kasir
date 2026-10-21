@@ -29,7 +29,1090 @@
           <i class="fas fa-store text-xl"></i>
         </div>
         <div>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WARHOME POS - Sistem Kasir Cloud & Dual Thermal Printer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Firebase SDK (v9 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #receipt-modal-content, #receipt-modal-content * { visibility: visible; }
+      #receipt-modal-content { 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        margin: 0; 
+        padding: 5mm; 
+        box-shadow: none; 
+      }
+      /* Dinamis sesuai ukuran kertas yang dipilih saat print */
+      .print-58mm { width: 58mm !important; font-size: 10px !important; }
+      .print-80mm { width: 80mm !important; font-size: 12px !important; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
+
+  <header class="bg-amber-800 text-white shadow-md sticky top-0 z-20 no-print">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+      <div class="flex items-center space-x-3">
+        <div class="bg-amber-900 p-2.5 rounded-full text-amber-200">
+          <i class="fas fa-store text-xl"></i>
+        </div>
+        <div>
           <h1 class="font-bold text-xl tracking-wide leading-tight flex items-center gap-2">
+            WARHOME 
+            <span id="cloud-badge" class="bg-amber-950 text-amber-300 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all">
+              Menghubungkan...
+            </span>
+          </h1>
+          <p class="text-xs text-amber-200">Jalan Ahmad Yani Handel 2 Muara Jawa | 081229830017</p>
+        </div>
+      </div>
+      <nav class="flex space-x-1 sm:space-x-2">
+        <button onclick="switchTab('pos')" id="tab-pos" class="px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition">
+          <i class="fas fa-cash-register mr-1"></i> Kasir
+        </button>
+        <button onclick="switchTab('history')" id="tab-history" class="px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition">
+          <i class="fas fa-chart-line mr-1"></i> Riwayat & Grafik
+        </button>
+        <button onclick="switchTab('products')" id="tab-products" class="px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition">
+          <i class="fas fa-utensils mr-1"></i> Kelola Menu
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <div id="session-banner" class="bg-amber-100 border-b border-amber-200 px-4 py-2 no-print">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center text-xs sm:text-sm text-amber-900 gap-2">
+      <div id="session-info-text" class="flex items-center space-x-4"></div>
+      <div class="flex items-center space-x-2" id="session-action-btn"></div>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto p-4 flex-1 w-full">
+    <div id="view-pos" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 flex flex-col space-y-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row gap-3 justify-between items-center">
+          <div class="relative w-full sm:w-64">
+            <input type="text" id="search-input" oninput="renderProducts()" placeholder="Cari menu..." class="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+          </div>
+          <div class="flex space-x-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0" id="category-filters"></div>
+        </div>
+        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto max-h-[calc(100vh-280px)] p-1"></div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-200px)] sticky top-20">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+          <h2 class="font-bold text-gray-700 flex items-center text-base">
+            <i class="fas fa-shopping-cart text-amber-700 mr-2"></i> Keranjang Pesanan
+          </h2>
+          <button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700 font-medium">Reset</button>
+        </div>
+        <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-3 divide-y divide-gray-100"></div>
+        <div class="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl space-y-3">
+          <div class="space-y-1.5 text-sm">
+            <div class="flex justify-between text-gray-500"><span>Subtotal</span><span id="cart-subtotal">Rp 0</span></div>
+            <div class="flex justify-between text-gray-500"><span>PPN (11%)</span><span id="cart-tax">Rp 0</span></div>
+            <div class="flex justify-between font-bold text-lg text-gray-800 pt-2 border-t"><span>Total</span><span id="cart-total" class="text-amber-800">Rp 0</span></div>
+          </div>
+          <button onclick="processDirectCheckout()" id="btn-checkout" class="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-lg shadow transition flex items-center justify-center space-x-2">
+            <i class="fas fa-receipt"></i><span>Cetak Resi / Selesaikan</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-history" class="hidden space-y-6">
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+          <div>
+            <h2 class="font-bold text-lg text-gray-800 flex items-center"><i class="fas fa-chart-area text-amber-700 mr-2"></i> Grafik Penjualan</h2>
+            <p class="text-xs text-gray-500">Visualisasi omset pendapatan Warhome</p>
+          </div>
+          <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold">
+            <button onclick="updateChartPeriod('daily')" id="chart-btn-daily" class="px-3 py-1.5 rounded-md bg-white shadow-sm text-amber-800 font-bold">Harian</button>
+            <button onclick="updateChartPeriod('weekly')" id="chart-btn-weekly" class="px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900">Mingguan</button>
+            <button onclick="updateChartPeriod('monthly')" id="chart-btn-monthly" class="px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900">Bulanan</button>
+            <button onclick="updateChartPeriod('yearly')" id="chart-btn-yearly" class="px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900">Tahunan</button>
+          </div>
+        </div>
+        <div class="relative h-64 sm:h-80 w-full"><canvas id="salesChart"></canvas></div>
+      </div>
+
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+          <div>
+            <h2 class="font-bold text-lg text-gray-800 flex items-center"><i class="fas fa-history text-amber-700 mr-2"></i> Riwayat Transaksi</h2>
+            <p class="text-xs text-gray-500">Rekap bulanan dan cetak ulang resi</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
+              <option value="all">Semua Bulan</option>
+              <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
+              <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
+              <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
+              <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
+            </select>
+            <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
+            <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
+              <i class="fas fa-print mr-1.5"></i> Cetak Laporan
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg"><span class="text-xs text-amber-800 font-semibold block">Total Omset</span><span id="stat-monthly-revenue" class="text-xl font-bold text-amber-900">Rp 0</span></div>
+          <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg"><span class="text-xs text-blue-800 font-semibold block">Total Transaksi</span><span id="stat-monthly-count" class="text-xl font-bold text-blue-900">0 Transaksi</span></div>
+          <div class="bg-green-50 border border-green-200 p-4 rounded-lg"><span class="text-xs text-green-800 font-semibold block">Item Terjual</span><span id="stat-monthly-items" class="text-xl font-bold text-green-900">0 Item</span></div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
+              <tr><th class="p-3">ID TRX</th><th class="p-3">Waktu</th><th class="p-3">Rincian Item</th><th class="p-3 text-right">Total</th><th class="p-3 text-center">Aksi</th></tr>
+            </thead>
+            <tbody id="history-table-body" class="divide-y"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-products" class="hidden space-y-6">
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div><h2 class="font-bold text-lg text-gray-800">Kelola Menu</h2><p class="text-xs text-gray-500">Tambah, edit, atau hapus menu Warhome</p></div>
+        <button onclick="openProductModal()" class="bg-amber-700 hover:bg-amber-800 text-white text-sm px-4 py-2 rounded-lg font-semibold shadow flex items-center"><i class="fas fa-plus mr-2"></i> Tambah Menu Baru</button>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
+            <tr><th class="p-3">Ikon</th><th class="p-3">Nama Menu</th><th class="p-3">Kategori</th><th class="p-3 text-right">Harga</th><th class="p-3 text-center">Stok</th><th class="p-3 text-center">Aksi</th></tr>
+          </thead>
+          <tbody id="products-table-body" class="divide-y"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="open-session-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+      <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4"><i class="fas fa-door-open text-amber-700 mr-2"></i> Buka Sesi Kasir</h3>
+      <div class="space-y-4">
+        <p class="text-sm text-gray-600">Masukkan jumlah modal kas awal untuk membuka transaksi hari ini.</p>
+        <div>
+          <label class="text-xs font-semibold text-gray-600">Saldo Kas Awal (Rp)</label>
+          <input type="number" id="start-cash-input" value="100000" min="0" class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button onclick="closeModal('open-session-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
+          <button onclick="startSession()" class="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-bold rounded-lg shadow">Mulai Sesi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="close-session-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+      <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4"><i class="fas fa-door-closed text-red-600 mr-2"></i> Tutup Sesi Kasir</h3>
+      <div id="close-session-body" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- MODAL RESI DENGAN PILIHAN DUAL SIZE PRINTER (58mm / 80mm) -->
+  <div id="receipt-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
+    <div id="receipt-modal-card" class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200">
+      <button onclick="closeModal('receipt-modal')" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl no-print">&times;</button>
+
+      <!-- PILIHAN UKURAN KERTAS PRINTER -->
+      <div class="mb-3 flex items-center justify-between border-b pb-2 no-print">
+        <span class="text-xs font-semibold text-gray-600"><i class="fas fa-scroll mr-1"></i> Ukuran Kertas:</span>
+        <div class="flex bg-gray-100 p-0.5 rounded-lg text-xs font-bold">
+          <button onclick="setPaperSize('58mm')" id="btn-paper-58" class="px-2.5 py-1 rounded-md bg-amber-800 text-white shadow-sm transition">58 mm</button>
+          <button onclick="setPaperSize('80mm')" id="btn-paper-80" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900 transition">80 mm</button>
+        </div>
+      </div>
+
+      <!-- AREA TAMPILAN RESI TERMAL -->
+      <div id="receipt-modal-content" class="bg-white text-black p-2 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-58mm">
+        <div class="text-center space-y-1">
+          <div class="mx-auto w-10 h-10 bg-amber-800 text-white rounded-full flex items-center justify-center font-bold text-lg mb-1">W</div>
+          <h2 class="font-bold text-base tracking-wider">WARHOME</h2>
+          <p class="text-[10px] leading-tight">Jalan Ahmad Yani Handel 2 Muara Jawa</p>
+          <p class="text-[10px]">Telp: 081229830017</p>
+          <p class="border-b border-dashed border-black pt-1"></p>
+        </div>
+        <div class="space-y-0.5 text-[11px]">
+          <div class="flex justify-between"><span>No: <span id="rec-id">TRX-000</span></span><span id="rec-date">00/00/0000</span></div>
+          <div>Kasir: Operator Warhome</div>
+        </div>
+        <div class="border-b border-dashed border-black"></div>
+        <div id="rec-items" class="space-y-1 text-[11px]"></div>
+        <div class="border-b border-dashed border-black"></div>
+        <div class="space-y-1 text-[11px]">
+          <div class="flex justify-between"><span>Subtotal</span><span id="rec-subtotal">Rp 0</span></div>
+          <div class="flex justify-between"><span>PPN (11%)</span><span id="rec-tax">Rp 0</span></div>
+          <div class="flex justify-between font-bold text-sm pt-1 border-t border-dashed border-black"><span>TOTAL</span><span id="rec-total">Rp 0</span></div>
+        </div>
+        <div class="border-b border-dashed border-black"></div>
+        <div class="text-center text-[10px] space-y-0.5 pt-1">
+          <p class="font-semibold">Terima Kasih Atas Kunjungan Anda!</p>
+          <p>WARHOME - Nikmati Suasana & Rasa</p>
+        </div>
+      </div>
+      
+      <!-- OPSI CETAK MULTI-MODE -->
+      <div class="mt-4 flex flex-col sm:flex-row gap-2 no-print">
+        <button onclick="window.print()" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow flex items-center justify-center space-x-1">
+          <i class="fas fa-print"></i><span>Cetak / PDF</span>
+        </button>
+        <button onclick="triggerBluetoothPrint()" class="flex-1 bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow flex items-center justify-center space-x-1">
+          <i class="fab fa-bluetooth-b"></i><span>Cetak BT Thermal</span>
+        </button>
+        <button onclick="closeModal('receipt-modal')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg text-xs">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="product-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+      <h3 id="product-modal-title" class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">Tambah Menu</h3>
+      <form id="product-form" onsubmit="saveProduct(event)" class="space-y-3">
+        <input type="hidden" id="prod-id">
+        <div><label class="text-xs font-semibold text-gray-600">Nama Menu</label><input type="text" id="prod-name" required class="w-full border rounded-lg p-2 text-sm"></div>
+        <div>
+          <label class="text-xs font-semibold text-gray-600">Kategori</label>
+          <select id="prod-category" required class="w-full border rounded-lg p-2 text-sm bg-white">
+            <option value="Minuman">Minuman (☕)</option>
+            <option value="Makanan">Makanan (🍔)</option>
+            <option value="Snack">Snack (🍪)</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="text-xs font-semibold text-gray-600">Harga (Rp)</label><input type="number" id="prod-price" min="0" required class="w-full border rounded-lg p-2 text-sm"></div>
+          <div><label class="text-xs font-semibold text-gray-600">Stok</label><input type="number" id="prod-stock" min="0" required class="w-full border rounded-lg p-2 text-sm"></div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-4 border-t">
+          <button type="button" onclick="closeModal('product-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-amber-700 text-white text-sm font-semibold rounded-lg">Simpan Menu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCn3F3DA-_85PbVRSruM5_Xu-bHVwrlQSg",
+  authDomain: "warhome-pos.firebaseapp.com",
+  projectId: "warhome-pos",
+  storageBucket: "warhome-pos.firebasestorage.app",
+  messagingSenderId: "493124045860",
+  appId: "1:493124045860:web:f86f968572e1d02ecd5cb1",
+  measurementId: "G-CMNPL2RHEN"
+    };
+
+    let useFirebase = false;
+    let db = null;
+
+    try {
+      if (firebaseConfig.apiKey !== "YOUR_API_KEY" && firebase.apps.length === 0) {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        useFirebase = true;
+      }
+    } catch (e) {
+      useFirebase = false;
+    }
+
+    const defaultProducts = [
+      { id: 1, name: 'V60 Pour Over Coffee', category: 'Minuman', price: 18000, stock: 50 },
+      { id: 2, name: 'Iced Butterscotch Latte', category: 'Minuman', price: 22000, stock: 40 },
+      { id: 3, name: 'Dirty Matcha Espresso', category: 'Minuman', price: 24000, stock: 30 },
+      { id: 4, name: 'Ramen Special Warhome', category: 'Makanan', price: 28000, stock: 25 },
+      { id: 5, name: 'Pop Steak Crispy', category: 'Makanan', price: 32000, stock: 20 },
+      { id: 6, name: 'French Fries Cheese', category: 'Snack', price: 15000, stock: 60 }
+    ];
+
+    let products = JSON.parse(localStorage.getItem('warhome_products')) || defaultProducts;
+    let cart = [];
+    let transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+    let session = JSON.parse(localStorage.getItem('warhome_session')) || null;
+    let selectedCategory = 'All';
+    let myChart = null;
+    let currentChartPeriod = 'daily';
+    let currentActiveTransaction = null;
+    let currentPaperSize = localStorage.getItem('warhome_paper_size') || '58mm';
+
+    const PRINTER_SERVICE_UUID = '00001101-0000-1000-8000-00805f9b34fb';
+    let bluetoothDevice = null;
+    let printerCharacteristic = null;
+
+    const categoryIcons = {
+      'Minuman': '<i class="fas fa-mug-hot text-amber-700"></i>',
+      'Makanan': '<i class="fas fa-utensils text-orange-600"></i>',
+      'Snack': '<i class="fas fa-cookie-bite text-yellow-600"></i>'
+    };
+
+    function formatRp(num) {
+      return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    // MANAJEMEN UKURAN KERTAS (58mm vs 80mm)
+    function setPaperSize(size) {
+      currentPaperSize = size;
+      localStorage.setItem('warhome_paper_size', size);
+
+      const btn58 = document.getElementById('btn-paper-58');
+      const btn80 = document.getElementById('btn-paper-80');
+      const modalContent = document.getElementById('receipt-modal-content');
+      const modalCard = document.getElementById('receipt-modal-card');
+
+      if (size === '80mm') {
+        btn80.className = "px-2.5 py-1 rounded-md bg-amber-800 text-white shadow-sm transition";
+        btn58.className = "px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900 transition";
+        
+        modalContent.className = "bg-white text-black p-3 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-80mm";
+        modalCard.className = "bg-white rounded-xl max-w-md w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200";
+      } else {
+        btn58.className = "px-2.5 py-1 rounded-md bg-amber-800 text-white shadow-sm transition";
+        btn80.className = "px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900 transition";
+        
+        modalContent.className = "bg-white text-black p-2 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-58mm";
+        modalCard.className = "bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200";
+      }
+    }
+
+    function updateBadge(status) {
+      const badge = document.getElementById('cloud-badge');
+      if (!badge) return;
+      if (status === 'cloud') {
+        badge.className = "bg-green-900 text-green-200 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
+        badge.innerHTML = `<i class="fas fa-wifi text-[9px]"></i> Live Cloud (Synced)`;
+      } else if (status === 'syncing') {
+        badge.className = "bg-yellow-900 text-yellow-200 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
+        badge.innerHTML = `<i class="fas fa-sync fa-spin text-[9px]"></i> Mengunggah Data...`;
+      } else {
+        badge.className = "bg-amber-950 text-amber-300 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
+        badge.innerHTML = `<i class="fas fa-hdd text-[9px]"></i> Local Mode (Offline)`;
+      }
+    }
+
+    function syncLocalDataToCloud() {
+      if (!useFirebase || !db || !navigator.onLine) return;
+
+      const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+      if (localTrx.length === 0) return;
+
+      updateBadge('syncing');
+
+      db.ref('transactions').once('value').then(snapshot => {
+        const cloudData = snapshot.val() || {};
+        localTrx.forEach(trx => {
+          if (!cloudData[trx.id]) {
+            db.ref('transactions/' + trx.id).set(trx);
+          }
+        });
+        localStorage.removeItem('warhome_transactions');
+        updateBadge('cloud');
+      }).catch(() => updateBadge('local'));
+    }
+
+    window.addEventListener('online', () => syncLocalDataToCloud());
+    window.addEventListener('offline', () => updateBadge('local'));
+
+    window.onload = function() {
+      setPaperSize(currentPaperSize);
+      if (useFirebase && db) {
+        setupRealtimeListeners();
+        syncLocalDataToCloud();
+      } else {
+        updateBadge('local');
+        checkSession();
+        renderProducts();
+        renderCart();
+        populateYearFilter();
+      }
+      renderCategoryFilters();
+    };
+
+    function setupRealtimeListeners() {
+      db.ref('.info/connected').on('value', (snap) => {
+        if (snap.val() === true) {
+          updateBadge('cloud');
+          syncLocalDataToCloud();
+        } else {
+          updateBadge('local');
+        }
+      });
+
+      db.ref('products').on('value', (snapshot) => {
+        const val = snapshot.val();
+        products = val ? (Array.isArray(val) ? val.filter(Boolean) : Object.values(val)) : defaultProducts;
+        localStorage.setItem('warhome_products', JSON.stringify(products));
+        renderProducts();
+        if (!document.getElementById('view-products').classList.contains('hidden')) {
+          renderProductTable();
+        }
+      });
+
+      db.ref('transactions').on('value', (snapshot) => {
+        const val = snapshot.val();
+        transactions = val ? Object.values(val).sort((a, b) => new Date(b.date) - new Date(a.date)) : [];
+        checkSession();
+        if (!document.getElementById('view-history').classList.contains('hidden')) {
+          renderHistory();
+          initChart();
+        }
+      });
+
+      db.ref('session').on('value', (snapshot) => {
+        session = snapshot.val();
+        if (session) localStorage.setItem('warhome_session', JSON.stringify(session));
+        else localStorage.removeItem('warhome_session');
+        checkSession();
+      });
+    }
+
+    function switchTab(tab) {
+      document.getElementById('view-pos').classList.add('hidden');
+      document.getElementById('view-history').classList.add('hidden');
+      document.getElementById('view-products').classList.add('hidden');
+
+      document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition";
+      document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition";
+      document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition";
+
+      if(tab === 'pos') {
+        document.getElementById('view-pos').classList.remove('hidden');
+        document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition";
+        renderProducts();
+      } else if(tab === 'history') {
+        document.getElementById('view-history').classList.remove('hidden');
+        document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition";
+        populateYearFilter();
+        renderHistory();
+        initChart();
+      } else if(tab === 'products') {
+        document.getElementById('view-products').classList.remove('hidden');
+        document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition";
+        renderProductTable();
+      }
+    }
+
+    function checkSession() {
+      const bannerText = document.getElementById('session-info-text');
+      const actionBtn = document.getElementById('session-action-btn');
+
+      if (!session) {
+        bannerText.innerHTML = `<span class="text-red-700 font-bold flex items-center"><i class="fas fa-exclamation-circle mr-1.5"></i> Sesi Kasir Belum Dibuka!</span>`;
+        actionBtn.innerHTML = `
+          <button onclick="openOpenSessionModal()" class="bg-amber-700 hover:bg-amber-800 text-white px-3 py-1 rounded text-xs font-semibold shadow transition flex items-center">
+            <i class="fas fa-door-open mr-1"></i> Buka Sesi Kasir
+          </button>
+        `;
+      } else {
+        const sessionSales = transactions
+          .filter(t => new Date(t.date) >= new Date(session.startTime))
+          .reduce((sum, t) => sum + (t.total || 0), 0);
+
+        bannerText.innerHTML = `
+          <span><strong>Buka Sesi:</strong> ${new Date(session.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
+          <span><strong>Modal Awal:</strong> ${formatRp(session.startCash)}</span>
+          <span><strong>Penjualan Sesi Ini:</strong> ${formatRp(sessionSales)}</span>
+        `;
+        actionBtn.innerHTML = `
+          <button onclick="openCloseSessionModal()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-semibold shadow transition flex items-center">
+            <i class="fas fa-door-closed mr-1"></i> Tutup Kasir & Rekap
+          </button>
+        `;
+      }
+    }
+
+    function openOpenSessionModal() {
+      document.getElementById('start-cash-input').value = 100000;
+      document.getElementById('open-session-modal').classList.remove('hidden');
+    }
+
+    function startSession() {
+      const cash = parseFloat(document.getElementById('start-cash-input').value) || 0;
+      session = { startTime: new Date().toISOString(), startCash: cash };
+      localStorage.setItem('warhome_session', JSON.stringify(session));
+
+      if (useFirebase && db && navigator.onLine) {
+        db.ref('session').set(session);
+      }
+      checkSession();
+      closeModal('open-session-modal');
+    }
+
+    function openCloseSessionModal() {
+      if (!session) return alert("Sesi kasir belum dibuka!");
+      const sessionSales = transactions
+        .filter(t => new Date(t.date) >= new Date(session.startTime))
+        .reduce((sum, t) => sum + (t.total || 0), 0);
+
+      const expectedCash = (session.startCash || 0) + sessionSales;
+      const body = document.getElementById('close-session-body');
+      body.innerHTML = `
+        <div class="space-y-2 text-sm text-gray-600">
+          <div class="flex justify-between"><span>Modal Kas Awal:</span> <span>${formatRp(session.startCash)}</span></div>
+          <div class="flex justify-between"><span>Total Penjualan:</span> <span>${formatRp(sessionSales)}</span></div>
+          <div class="flex justify-between font-bold border-t pt-1.5 text-gray-800"><span>Ekspektasi Kas Fisik:</span> <span>${formatRp(expectedCash)}</span></div>
+        </div>
+        <div class="pt-2">
+          <label class="text-xs font-semibold text-gray-600">Jumlah Kas Fisik Aktual (Rp)</label>
+          <input type="number" id="actual-cash-input" value="${expectedCash}" min="0" class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none">
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t">
+          <button onclick="closeModal('close-session-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
+          <button onclick="closeSession()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow">Tutup Sesi Sekarang</button>
+        </div>
+      `;
+      document.getElementById('close-session-modal').classList.remove('hidden');
+    }
+
+    function closeSession() {
+      localStorage.removeItem('warhome_session');
+      session = null;
+      if (useFirebase && db && navigator.onLine) {
+        db.ref('session').remove();
+      }
+      checkSession();
+      closeModal('close-session-modal');
+      alert("Sesi kasir berhasil ditutup!");
+    }
+
+    function renderCategoryFilters() {
+      const categories = ['All', 'Minuman', 'Makanan', 'Snack'];
+      const container = document.getElementById('category-filters');
+      container.innerHTML = categories.map(cat => {
+        const icon = categoryIcons[cat] || '<i class="fas fa-th"></i>';
+        const active = selectedCategory === cat ? 'bg-amber-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200';
+        return `
+          <button onclick="setCategory('${cat}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1 whitespace-nowrap transition ${active}">
+            <span>${icon}</span>
+            <span>${cat === 'All' ? 'Semua' : cat}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setCategory(cat) {
+      selectedCategory = cat;
+      renderCategoryFilters();
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const searchInput = document.getElementById('search-input');
+      const search = searchInput ? searchInput.value.toLowerCase() : '';
+      const grid = document.getElementById('product-grid');
+      
+      const filtered = products.filter(p => {
+        const matchCat = selectedCategory === 'All' || p.category === selectedCategory;
+        const matchSearch = p.name.toLowerCase().includes(search);
+        return matchCat && matchSearch;
+      });
+
+      grid.innerHTML = filtered.map(p => `
+        <div onclick="addToCart(${p.id})" class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm hover:shadow-md cursor-pointer transition flex flex-col justify-between space-y-2">
+          <div class="flex justify-between items-start">
+            <span class="text-xl">${categoryIcons[p.category] || '<i class="fas fa-box"></i>'}</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">${p.category}</span>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-gray-800 line-clamp-2">${p.name}</h3>
+            <p class="text-xs text-amber-800 font-bold mt-1">${formatRp(p.price)}</p>
+          </div>
+          <div class="text-[10px] text-gray-400 border-t pt-1 flex justify-between">
+            <span>Stok: ${p.stock}</span>
+            <span class="text-amber-700 font-medium">+ Tambah</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addToCart(id) {
+      if (!session) return openOpenSessionModal();
+      const prod = products.find(p => p.id === id);
+      if (!prod || prod.stock <= 0) return alert("Stok produk habis!");
+
+      const existing = cart.find(item => item.id === id);
+      if (existing) {
+        if (existing.qty >= prod.stock) return alert("Melebihi stok yang tersedia!");
+        existing.qty++;
+      } else {
+        cart.push({ ...prod, qty: 1 });
+      }
+      renderCart();
+    }
+
+    function updateQty(id, delta) {
+      const item = cart.find(i => i.id === id);
+      if (!item) return;
+      const prod = products.find(p => p.id === id);
+
+      item.qty += delta;
+      if (item.qty > prod.stock) {
+        item.qty = prod.stock;
+        alert("Batas stok tercapai!");
+      }
+
+      if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = [];
+      renderCart();
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cart-items');
+      if (cart.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-gray-400 space-y-2">
+            <i class="fas fa-shopping-basket text-3xl"></i>
+            <p class="text-xs">Keranjang masih kosong</p>
+          </div>
+        `;
+      } else {
+        container.innerHTML = cart.map(item => `
+          <div class="flex items-center justify-between pt-2">
+            <div class="flex-1 pr-2">
+              <h4 class="font-semibold text-xs text-gray-800">${item.name}</h4>
+              <span class="text-[10px] text-amber-800 font-bold">${formatRp(item.price)}</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="updateQty(${item.id}, -1)" class="w-6 h-6 bg-gray-200 text-gray-700 rounded-full font-bold text-xs flex items-center justify-center hover:bg-gray-300">-</button>
+              <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
+              <button onclick="updateQty(${item.id}, 1)" class="w-6 h-6 bg-amber-700 text-white rounded-full font-bold text-xs flex items-center justify-center hover:bg-amber-800">+</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const tax = Math.round(subtotal * 0.11);
+      const total = subtotal + tax;
+
+      document.getElementById('cart-subtotal').innerText = formatRp(subtotal);
+      document.getElementById('cart-tax').innerText = formatRp(tax);
+      document.getElementById('cart-total').innerText = formatRp(total);
+    }
+
+    function processDirectCheckout() {
+      if (cart.length === 0) return alert("Keranjang belanja masih kosong!");
+      if (!session) return openOpenSessionModal();
+
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const tax = Math.round(subtotal * 0.11);
+      const total = subtotal + tax;
+      const trxId = 'TRX-' + Date.now().toString().slice(-6);
+
+      const newTrx = {
+        id: trxId,
+        date: new Date().toISOString(),
+        items: [...cart],
+        subtotal: subtotal,
+        tax: tax,
+        total: total
+      };
+
+      const updatedProducts = products.map(p => {
+        const itemInCart = cart.find(c => c.id === p.id);
+        if (itemInCart) return { ...p, stock: p.stock - itemInCart.qty };
+        return p;
+      });
+
+      products = updatedProducts;
+      transactions.unshift(newTrx);
+      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
+      localStorage.setItem('warhome_products', JSON.stringify(products));
+
+      if (useFirebase && db && navigator.onLine) {
+        db.ref('transactions/' + trxId).set(newTrx);
+        db.ref('products').set(updatedProducts);
+      }
+
+      clearCart();
+      renderProducts();
+      showReceiptModal(newTrx);
+    }
+
+    function showReceiptModal(trx) {
+      currentActiveTransaction = trx;
+      document.getElementById('rec-id').innerText = trx.id;
+      document.getElementById('rec-date').innerText = new Date(trx.date).toLocaleDateString('id-ID') + ' ' + new Date(trx.date).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+      
+      document.getElementById('rec-items').innerHTML = trx.items.map(item => `
+        <div>
+          <div class="flex justify-between">
+            <span class="font-bold">${item.name}</span>
+            <span>${formatRp(item.price * item.qty)}</span>
+          </div>
+          <div class="text-[10px] text-gray-600">${item.qty} x ${formatRp(item.price)}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('rec-subtotal').innerText = formatRp(trx.subtotal);
+      document.getElementById('rec-tax').innerText = formatRp(trx.tax);
+      document.getElementById('rec-total').innerText = formatRp(trx.total);
+
+      document.getElementById('receipt-modal').classList.remove('hidden');
+    }
+
+    // WEB BLUETOOTH THERMAL PRINTER (DUAL SIZE: 58mm / 80mm)
+    async function connectBluetoothPrinter() {
+      try {
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [PRINTER_SERVICE_UUID]
+        });
+
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService(PRINTER_SERVICE_UUID);
+        const characteristics = await service.getCharacteristics();
+        printerCharacteristic = characteristics[0];
+
+        alert("Terhubung ke Printer Bluetooth: " + (bluetoothDevice.name || "Thermal Printer"));
+        return true;
+      } catch (error) {
+        console.error("Koneksi Bluetooth Gagal:", error);
+        alert("Gagal terhubung ke printer Bluetooth: " + error.message);
+        return false;
+      }
+    }
+
+    function textToEscPosBytes(text) {
+      const encoder = new TextEncoder();
+      const ESC = 0x1B;
+      const INIT_PRINTER = [ESC, 0x40];
+      const FEED_LINE = [0x0A];
+
+      let commandBytes = [];
+      commandBytes.push(...INIT_PRINTER);
+      const textBytes = encoder.encode(text);
+      commandBytes.push(...textBytes);
+      commandBytes.push(...FEED_LINE, ...FEED_LINE, ...FEED_LINE);
+
+      return new Uint8Array(commandBytes);
+    }
+
+    async function printViaBluetooth(trx) {
+      if (!navigator.bluetooth) {
+        alert("Browser HP kamu belum mendukung Web Bluetooth API. Wajib menggunakan Google Chrome HP Android!");
+        return;
+      }
+
+      if (!printerCharacteristic) {
+        const connected = await connectBluetoothPrinter();
+        if (!connected) return;
+      }
+
+      // Deteksi Lebar Karakter berdasarkan Pilihan Ukuran Kertas
+      const is80mm = currentPaperSize === '80mm';
+      const LINE_WIDTH = is80mm ? 48 : 32;
+      const DIVIDER = "-".repeat(LINE_WIDTH) + "\n";
+
+      let receiptText = "";
+      
+      if (is80mm) {
+        receiptText += "                  WARHOME POS                   \n";
+        receiptText += "     Jalan Ahmad Yani Handel 2 Muara Jawa       \n";
+        receiptText += "               Telp: 081229830017               \n";
+      } else {
+        receiptText += "        WARHOME POS         \n";
+        receiptText += "  Jl. A. Yani Handel 2 M. Jawa \n";
+        receiptText += "     Telp: 081229830017     \n";
+      }
+
+      receiptText += DIVIDER;
+      receiptText += `No  : ${trx.id}\n`;
+      receiptText += `Tgl : ${new Date(trx.date).toLocaleDateString('id-ID')} ${new Date(trx.date).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}\n`;
+      receiptText += DIVIDER;
+
+      trx.items.forEach(item => {
+        receiptText += `${item.name}\n`;
+        const linePrice = `${item.qty} x ${formatRp(item.price)}`;
+        const lineTotal = formatRp(item.price * item.qty);
+        const space = LINE_WIDTH - (linePrice.length + lineTotal.length);
+        receiptText += linePrice + " ".repeat(Math.max(0, space)) + lineTotal + "\n";
+      });
+
+      receiptText += DIVIDER;
+
+      const appendRow = (label, val) => {
+        const valStr = formatRp(val);
+        const space = LINE_WIDTH - (label.length + valStr.length);
+        return label + " ".repeat(Math.max(0, space)) + valStr + "\n";
+      };
+
+      receiptText += appendRow("Subtotal", trx.subtotal);
+      receiptText += appendRow("PPN (11%)", trx.tax);
+      receiptText += DIVIDER;
+      receiptText += appendRow("TOTAL", trx.total);
+      receiptText += DIVIDER;
+      
+      if (is80mm) {
+        receiptText += "     Terima Kasih Atas Kunjungan Anda di WARHOME! \n";
+      } else {
+        receiptText += "  Terima Kasih Atas Kunjungan! \n";
+      }
+
+      try {
+        const dataBytes = textToEscPosBytes(receiptText);
+        await printerCharacteristic.writeValue(dataBytes);
+        alert(`Resi ${currentPaperSize} berhasil dicetak via Bluetooth!`);
+      } catch (error) {
+        console.error("Gagal Mengirim Data Cetak:", error);
+        alert("Gagal mencetak resi: " + error.message);
+        printerCharacteristic = null;
+      }
+    }
+
+    function triggerBluetoothPrint() {
+      if (currentActiveTransaction) {
+        printViaBluetooth(currentActiveTransaction);
+      }
+    }
+
+    function populateYearFilter() {
+      const yearSelect = document.getElementById('filter-year');
+      const currentYear = new Date().getFullYear();
+      yearSelect.innerHTML = '';
+      for (let y = currentYear; y >= currentYear - 3; y--) {
+        yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+      }
+    }
+
+    function renderHistory() {
+      const monthFilter = document.getElementById('filter-month').value;
+      const yearFilter = parseInt(document.getElementById('filter-year').value);
+
+      const filtered = transactions.filter(t => {
+        const d = new Date(t.date);
+        const matchYear = d.getFullYear() === yearFilter;
+        const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
+        return matchYear && matchMonth;
+      });
+
+      const totalRev = filtered.reduce((s, t) => s + (t.total || 0), 0);
+      const totalItems = filtered.reduce((s, t) => s + (t.items ? t.items.reduce((is, i) => is + i.qty, 0) : 0), 0);
+
+      document.getElementById('stat-monthly-revenue').innerText = formatRp(totalRev);
+      document.getElementById('stat-monthly-count').innerText = `${filtered.length} Transaksi`;
+      document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
+
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = filtered.map(t => `
+        <tr class="hover:bg-gray-50">
+          <td class="p-3 font-bold text-xs">${t.id}</td>
+          <td class="p-3 text-xs">${new Date(t.date).toLocaleString('id-ID')}</td>
+          <td class="p-3 text-xs">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
+          <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.total)}</td>
+          <td class="p-3 text-center">
+            <button onclick='showReceiptModal(${JSON.stringify(t)})' class="text-amber-700 hover:text-amber-900 text-xs font-semibold">
+              <i class="fas fa-print mr-1"></i> Cetak
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function initChart() {
+      const canvas = document.getElementById('salesChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (myChart) myChart.destroy();
+
+      const chartData = getChartData(currentChartPeriod);
+
+      myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: 'Pendapatan (Rp)',
+            data: chartData.data,
+            borderColor: '#92400e',
+            backgroundColor: 'rgba(146, 64, 14, 0.1)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: function(val) { return 'Rp ' + val.toLocaleString('id-ID'); } }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChartPeriod(period) {
+      currentChartPeriod = period;
+      ['daily','weekly','monthly','yearly'].forEach(p => {
+        const btn = document.getElementById(`chart-btn-${p}`);
+        if (btn) {
+          btn.className = p === period ? "px-3 py-1.5 rounded-md bg-white shadow-sm text-amber-800 font-bold" : "px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900";
+        }
+      });
+      initChart();
+    }
+
+    function getChartData(period) {
+      const labels = [];
+      const data = [];
+      const now = new Date();
+
+      if (period === 'daily') {
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          labels.push(d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' }));
+          
+          const total = transactions
+            .filter(t => new Date(t.date).toDateString() === d.toDateString())
+            .reduce((s, t) => s + (t.total || 0), 0);
+          data.push(total);
+        }
+      } else if (period === 'weekly') {
+        for (let i = 3; i >= 0; i--) {
+          labels.push(`Minggu -${i}`);
+          data.push(0);
+        }
+      } else if (period === 'monthly') {
+        const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        for (let i = 0; i < 12; i++) {
+          labels.push(months[i]);
+          const total = transactions
+            .filter(t => new Date(t.date).getMonth() === i)
+            .reduce((s, t) => s + (t.total || 0), 0);
+          data.push(total);
+        }
+      } else if (period === 'yearly') {
+        const y = now.getFullYear();
+        for (let i = 2; i >= 0; i--) {
+          labels.push((y - i).toString());
+          const total = transactions
+            .filter(t => new Date(t.date).getFullYear() === (y - i))
+            .reduce((s, t) => s + (t.total || 0), 0);
+          data.push(total);
+        }
+      }
+
+      return { labels, data };
+    }
+
+    function renderProductTable() {
+      const tbody = document.getElementById('products-table-body');
+      tbody.innerHTML = products.map(p => `
+        <tr class="hover:bg-gray-50">
+          <td class="p-3 text-lg">${categoryIcons[p.category] || '<i class="fas fa-box"></i>'}</td>
+          <td class="p-3 font-semibold text-gray-800">${p.name}</td>
+          <td class="p-3"><span class="px-2 py-0.5 bg-gray-100 text-xs rounded-full">${p.category}</span></td>
+          <td class="p-3 text-right font-bold text-amber-800">${formatRp(p.price)}</td>
+          <td class="p-3 text-center">${p.stock}</td>
+          <td class="p-3 text-center space-x-2">
+            <button onclick="editProduct(${p.id})" class="text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i></button>
+            <button onclick="deleteProduct(${p.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openProductModal(isEdit = false) {
+      if (!isEdit) {
+        document.getElementById('product-form').reset();
+        document.getElementById('prod-id').value = '';
+        document.getElementById('product-modal-title').innerText = "Tambah Menu Baru";
+      }
+      document.getElementById('product-modal').classList.remove('hidden');
+    }
+
+    function editProduct(id) {
+      const p = products.find(prod => prod.id === id);
+      if (!p) return;
+      document.getElementById('prod-id').value = p.id;
+      document.getElementById('prod-name').value = p.name;
+      document.getElementById('prod-category').value = p.category;
+      document.getElementById('prod-price').value = p.price;
+      document.getElementById('prod-stock').value = p.stock;
+      document.getElementById('product-modal-title').innerText = "Edit Menu Warhome";
+      openProductModal(true);
+    }
+
+    function saveProduct(e) {
+      e.preventDefault();
+      const id = document.getElementById('prod-id').value;
+      const name = document.getElementById('prod-name').value;
+      const category = document.getElementById('prod-category').value;
+      const price = parseFloat(document.getElementById('prod-price').value);
+      const stock = parseInt(document.getElementById('prod-stock').value);
+
+      let updatedProducts = [...products];
+
+      if (id) {
+        const index = updatedProducts.findIndex(p => p.id === parseInt(id));
+        if (index !== -1) {
+          updatedProducts[index] = { id: parseInt(id), name, category, price, stock };
+        }
+      } else {
+        const newId = updatedProducts.length ? Math.max(...updatedProducts.map(p => p.id)) + 1 : 1;
+        updatedProducts.push({ id: newId, name, category, price, stock });
+      }
+
+      products = updatedProducts;
+      localStorage.setItem('warhome_products', JSON.stringify(products));
+
+      if (useFirebase && db && navigator.onLine) {
+        db.ref('products').set(updatedProducts);
+      } else {
+        renderProductTable();
+        renderProducts();
+      }
+      closeModal('product-modal');
+    }
+
+    function deleteProduct(id) {
+      if (confirm("Yakin ingin menghapus menu ini?")) {
+        const updatedProducts = products.filter(p => p.id !== id);
+        products = updatedProducts;
+        localStorage.setItem('warhome_products', JSON.stringify(products));
+
+        if (useFirebase && db && navigator.onLine) {
+          db.ref('products').set(updatedProducts);
+        } else {
+          renderProductTable();
+          renderProducts();
+        }
+      }
+    }
+  </script>
+</body>
+</html>          <h1 class="font-bold text-xl tracking-wide leading-tight flex items-center gap-2">
             WARHOME 
             <span id="cloud-badge" class="bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-normal">
               <i class="fas fa-hdd text-[9px] mr-1"></i> Mode Aktif
