@@ -3,13 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WARHOME POS - Sistem Kasir</title>
+  <title>WARHOME POS - Sistem Kasir Cloud</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Firebase SDK (v9 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
   <style>
     @media print {
       body * {
@@ -43,7 +48,12 @@
           <i class="fas fa-store text-xl"></i>
         </div>
         <div>
-          <h1 class="font-bold text-xl tracking-wide leading-tight">WARHOME</h1>
+          <h1 class="font-bold text-xl tracking-wide leading-tight flex items-center gap-2">
+            WARHOME 
+            <span id="cloud-badge" class="bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-normal">
+              <i class="fas fa-wifi text-[9px] mr-1"></i> Syncing...
+            </span>
+          </h1>
           <p class="text-xs text-amber-200">Jalan Ahmad Yani Handel 2 Muara Jawa | 081229830017</p>
         </div>
       </div>
@@ -149,7 +159,7 @@
             <h2 class="font-bold text-lg text-gray-800 flex items-center">
               <i class="fas fa-chart-area text-amber-700 mr-2"></i> Grafik Statistik Penjualan
             </h2>
-            <p class="text-xs text-gray-500">Visualisasi tren omset pendapatan Warhome</p>
+            <p class="text-xs text-gray-500">Visualisasi tren omset pendapatan Warhome (Cloud Realtime)</p>
           </div>
           <!-- Filter Periode Grafik -->
           <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold">
@@ -241,7 +251,7 @@
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 class="font-bold text-lg text-gray-800">Daftar Menu Makanan & Minuman</h2>
-          <p class="text-xs text-gray-500">Tambah, edit, atau hapus menu Warhome</p>
+          <p class="text-xs text-gray-500">Tambah, edit, atau hapus menu Warhome (Tersimpan di Cloud)</p>
         </div>
         <button onclick="openProductModal()" class="bg-amber-700 hover:bg-amber-800 text-white text-sm px-4 py-2 rounded-lg font-semibold flex items-center shadow">
           <i class="fas fa-plus mr-2"></i> Tambah Menu Baru
@@ -385,8 +395,41 @@
   </div>
 
   <script>
-    // State Aplikasi Initial
-    let products = JSON.parse(localStorage.getItem('warhome_products')) || [
+    // ----------------------------------------------------
+    // KONFIGURASI FIREBASE
+    // Ganti nilai di bawah ini dengan firebaseConfig milikmu sendiri dari console.firebase.google.com
+    // ----------------------------------------------------
+    // Import the functions you need from the SDKs you need
+
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCn3F3DA-_85PbVRSruM5_Xu-bHVwrlQSg",
+  authDomain: "warhome-pos.firebaseapp.com",
+  projectId: "warhome-pos",
+  storageBucket: "warhome-pos.firebasestorage.app",
+  messagingSenderId: "493124045860",
+  appId: "1:493124045860:web:f86f968572e1d02ecd5cb1",
+  measurementId: "G-CMNPL2RHEN"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    // Default Initial Menu
+    const defaultProducts = [
       { id: 1, name: 'V60 Pour Over Coffee', category: 'Minuman', price: 18000, stock: 50 },
       { id: 2, name: 'Iced Butterscotch Latte', category: 'Minuman', price: 22000, stock: 40 },
       { id: 3, name: 'Dirty Matcha Espresso', category: 'Minuman', price: 24000, stock: 30 },
@@ -395,23 +438,74 @@
       { id: 6, name: 'French Fries Cheese', category: 'Snack', price: 15000, stock: 60 }
     ];
 
+    // State Aplikasi
+    let products = [];
     let cart = [];
-    let transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
-    let session = JSON.parse(localStorage.getItem('warhome_session')) || null;
+    let transactions = [];
+    let session = null;
     let selectedCategory = 'All';
     let myChart = null;
     let currentChartPeriod = 'daily';
 
-    // Kategori & Logonya
     const categoryIcons = {
       'Minuman': '<i class="fas fa-mug-hot text-amber-700"></i>',
       'Makanan': '<i class="fas fa-utensils text-orange-600"></i>',
       'Snack': '<i class="fas fa-cookie-bite text-yellow-600"></i>'
     };
 
-    // Helper Format Rupiah
     function formatRp(num) {
-      return 'Rp ' + Number(num).toLocaleString('id-ID');
+      return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+    }
+
+    // ----------------------------------------------------
+    // KONEKSI & SINKRONISASI REALTIME FIREBASE
+    // ----------------------------------------------------
+    window.onload = function() {
+      setupRealtimeListeners();
+      renderCategoryFilters();
+      renderCart();
+      populateYearFilter();
+    };
+
+    function setupRealtimeListeners() {
+      const badge = document.getElementById('cloud-badge');
+
+      // Listen Produk Realtime
+      db.ref('products').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (!val) {
+          db.ref('products').set(defaultProducts);
+          products = defaultProducts;
+        } else {
+          products = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
+        }
+        renderProducts();
+        if (document.getElementById('view-products').classList.contains('hidden') === false) {
+          renderProductTable();
+        }
+        badge.innerHTML = `<i class="fas fa-check-circle text-green-400 mr-1"></i> Live Cloud`;
+      });
+
+      // Listen Transaksi Realtime
+      db.ref('transactions').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          transactions = Object.values(val).sort((a, b) => new Date(b.date) - new Date(a.date));
+        } else {
+          transactions = [];
+        }
+        checkSession();
+        if (document.getElementById('view-history').classList.contains('hidden') === false) {
+          renderHistory();
+          initChart();
+        }
+      });
+
+      // Listen Sesi Kasir Realtime
+      db.ref('session').on('value', (snapshot) => {
+        session = snapshot.val();
+        checkSession();
+      });
     }
 
     // Tab Switching
@@ -439,21 +533,11 @@
       }
     }
 
-    // Initial Load & Render
-    window.onload = function() {
-      checkSession();
-      renderCategoryFilters();
-      renderProducts();
-      renderCart();
-      populateYearFilter();
-    };
-
-    // Manajemen Sesi Kasir
+    // Manajemen Sesi Kasir Cloud
     function checkSession() {
       const banner = document.getElementById('session-info-text');
       if(!session) {
         banner.innerHTML = `<span class="text-red-700 font-bold"><i class="fas fa-exclamation-circle mr-1"></i> Sesi Kasir Belum Dibuka!</span>`;
-        openOpenSessionModal();
       } else {
         const sessionSales = transactions
           .filter(t => new Date(t.date) >= new Date(session.startTime))
@@ -477,7 +561,7 @@
           <input type="number" id="start-cash-input" value="100000" class="w-full border rounded-lg p-2 text-sm mt-1">
         </div>
         <button onclick="startSession()" class="w-full bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 rounded-lg text-sm shadow">
-          Mulai Sesi
+          Mulai Sesi Kasir
         </button>
       `;
       modal.classList.remove('hidden');
@@ -485,13 +569,12 @@
 
     function startSession() {
       const cash = parseFloat(document.getElementById('start-cash-input').value) || 0;
-      session = {
+      const newSession = {
         startTime: new Date().toISOString(),
         startCash: cash
       };
-      localStorage.setItem('warhome_session', JSON.stringify(session));
+      db.ref('session').set(newSession);
       document.getElementById('session-modal').classList.add('hidden');
-      checkSession();
     }
 
     function openCloseSessionModal() {
@@ -520,11 +603,9 @@
     }
 
     function closeSession() {
-      localStorage.removeItem('warhome_session');
-      session = null;
+      db.ref('session').remove();
       document.getElementById('session-modal').classList.add('hidden');
       alert("Sesi kasir berhasil ditutup!");
-      checkSession();
     }
 
     // Filter Kategori
@@ -551,7 +632,8 @@
 
     // Render Grid Produk Kasir
     function renderProducts() {
-      const search = document.getElementById('search-input').value.toLowerCase();
+      const searchInput = document.getElementById('search-input');
+      const search = searchInput ? searchInput.value.toLowerCase() : '';
       const grid = document.getElementById('product-grid');
       
       const filtered = products.filter(p => {
@@ -563,7 +645,7 @@
       grid.innerHTML = filtered.map(p => `
         <div onclick="addToCart(${p.id})" class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm hover:shadow-md cursor-pointer transition flex flex-col justify-between space-y-2">
           <div class="flex justify-between items-start">
-            <span class="text-xl">${categoryIcons[p.category]}</span>
+            <span class="text-xl">${categoryIcons[p.category] || '<i class="fas fa-box"></i>'}</span>
             <span class="text-[10px] font-semibold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">${p.category}</span>
           </div>
           <div>
@@ -580,7 +662,10 @@
 
     // Keranjang Belanja
     function addToCart(id) {
-      if(!session) return alert("Buka sesi kasir terlebih dahulu!");
+      if(!session) {
+        openOpenSessionModal();
+        return alert("Buka sesi kasir terlebih dahulu!");
+      }
       const prod = products.find(p => p.id === id);
       if(!prod || prod.stock <= 0) return alert("Stok produk habis!");
 
@@ -650,17 +735,21 @@
       document.getElementById('cart-total').innerText = formatRp(total);
     }
 
-    // Direct Checkout & Tampilkan Pop-Up Resi
+    // Checkout & Tampilkan Resi Modal
     function processDirectCheckout() {
       if(cart.length === 0) return alert("Keranjang belanja masih kosong!");
-      if(!session) return alert("Buka sesi kasir terlebih dahulu!");
+      if(!session) {
+        openOpenSessionModal();
+        return alert("Buka sesi kasir terlebih dahulu!");
+      }
 
       const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
       const tax = Math.round(subtotal * 0.11);
       const total = subtotal + tax;
+      const trxId = 'TRX-' + Date.now().toString().slice(-6);
 
       const newTrx = {
-        id: 'TRX-' + Date.now().toString().slice(-6),
+        id: trxId,
         date: new Date().toISOString(),
         items: [...cart],
         subtotal: subtotal,
@@ -668,22 +757,20 @@
         total: total
       };
 
-      // Potong Stok
-      cart.forEach(c => {
-        const p = products.find(prod => prod.id === c.id);
-        if(p) p.stock -= c.qty;
+      // Potong Stok di Array & Update Cloud Firebase
+      const updatedProducts = products.map(p => {
+        const itemInCart = cart.find(c => c.id === p.id);
+        if(itemInCart) {
+          return { ...p, stock: p.stock - itemInCart.qty };
+        }
+        return p;
       });
 
-      transactions.unshift(newTrx);
-      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
-      localStorage.setItem('warhome_products', JSON.stringify(products));
+      // Push Transaksi ke Firebase & Update Stok
+      db.ref('transactions/' + trxId).set(newTrx);
+      db.ref('products').set(updatedProducts);
 
-      // Reset
       clearCart();
-      renderProducts();
-      checkSession();
-
-      // Tampilkan Pop-up Resi Interaktif
       showReceiptModal(newTrx);
     }
 
@@ -734,7 +821,6 @@
         return matchYear && matchMonth;
       });
 
-      // Stats
       const totalRev = filtered.reduce((s, t) => s + t.total, 0);
       const totalItems = filtered.reduce((s, t) => s + t.items.reduce((is, i) => is + i.qty, 0), 0);
 
@@ -764,7 +850,7 @@
       window.print();
     }
 
-    // Visual Chart Grafik Penjualan
+    // Chart Visualisasi Penjualan
     function initChart() {
       const ctx = document.getElementById('salesChart').getContext('2d');
       if(myChart) myChart.destroy();
@@ -788,15 +874,11 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
             y: {
               beginAtZero: true,
-              ticks: {
-                callback: function(val) { return 'Rp ' + val.toLocaleString('id-ID'); }
-              }
+              ticks: { callback: function(val) { return 'Rp ' + val.toLocaleString('id-ID'); } }
             }
           }
         }
@@ -835,7 +917,7 @@
       } else if(period === 'weekly') {
         for(let i = 3; i >= 0; i--) {
           labels.push(`Minggu -${i}`);
-          data.push(Math.floor(Math.random() * 500000) + 100000);
+          data.push(0);
         }
       } else if(period === 'monthly') {
         const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -860,12 +942,12 @@
       return { labels, data };
     }
 
-    // TAB 3: Kelola Products CRUD
+    // TAB 3: Kelola Products CRUD (Cloud Firebase)
     function renderProductTable() {
       const tbody = document.getElementById('products-table-body');
       tbody.innerHTML = products.map(p => `
         <tr class="hover:bg-gray-50">
-          <td class="p-3 text-lg">${categoryIcons[p.category]}</td>
+          <td class="p-3 text-lg">${categoryIcons[p.category] || '<i class="fas fa-box"></i>'}</td>
           <td class="p-3 font-semibold text-gray-800">${p.name}</td>
           <td class="p-3"><span class="px-2 py-0.5 bg-gray-100 text-xs rounded-full">${p.category}</span></td>
           <td class="p-3 text-right font-bold text-amber-800">${formatRp(p.price)}</td>
@@ -911,28 +993,26 @@
       const price = parseFloat(document.getElementById('prod-price').value);
       const stock = parseInt(document.getElementById('prod-stock').value);
 
+      let updatedProducts = [...products];
+
       if(id) {
-        const index = products.findIndex(p => p.id === parseInt(id));
+        const index = updatedProducts.findIndex(p => p.id === parseInt(id));
         if(index !== -1) {
-          products[index] = { id: parseInt(id), name, category, price, stock };
+          updatedProducts[index] = { id: parseInt(id), name, category, price, stock };
         }
       } else {
-        const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
-        products.push({ id: newId, name, category, price, stock });
+        const newId = updatedProducts.length ? Math.max(...updatedProducts.map(p => p.id)) + 1 : 1;
+        updatedProducts.push({ id: newId, name, category, price, stock });
       }
 
-      localStorage.setItem('warhome_products', JSON.stringify(products));
+      db.ref('products').set(updatedProducts);
       closeProductModal();
-      renderProductTable();
-      renderProducts();
     }
 
     function deleteProduct(id) {
-      if(confirm("Yakin ingin menghapus menu ini?")) {
-        products = products.filter(p => p.id !== id);
-        localStorage.setItem('warhome_products', JSON.stringify(products));
-        renderProductTable();
-        renderProducts();
+      if(confirm("Yakin ingin menghapus menu ini dari database cloud?")) {
+        const updatedProducts = products.filter(p => p.id !== id);
+        db.ref('products').set(updatedProducts);
       }
     }
   </script>
