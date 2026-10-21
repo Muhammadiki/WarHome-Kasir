@@ -421,4 +421,520 @@
       document.getElementById('view-products').classList.add('hidden');
 
       document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition";
-      document.g
+      document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition";
+      document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition";
+
+      if(tab === 'pos') {
+        document.getElementById('view-pos').classList.remove('hidden');
+        document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition";
+      } else if(tab === 'history') {
+        document.getElementById('view-history').classList.remove('hidden');
+        document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition";
+        renderHistory();
+        initChart();
+      } else if(tab === 'products') {
+        document.getElementById('view-products').classList.remove('hidden');
+        document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition";
+        renderProductTable();
+      }
+    }
+
+    // Initial Load & Render
+    window.onload = function() {
+      checkSession();
+      renderCategoryFilters();
+      renderProducts();
+      renderCart();
+      populateYearFilter();
+    };
+
+    // Manajemen Sesi Kasir
+    function checkSession() {
+      const banner = document.getElementById('session-info-text');
+      if(!session) {
+        banner.innerHTML = `<span class="text-red-700 font-bold"><i class="fas fa-exclamation-circle mr-1"></i> Sesi Kasir Belum Dibuka!</span>`;
+        openOpenSessionModal();
+      } else {
+        const sessionSales = transactions
+          .filter(t => new Date(t.date) >= new Date(session.startTime))
+          .reduce((sum, t) => sum + t.total, 0);
+
+        banner.innerHTML = `
+          <span><strong>Buka Sesi:</strong> ${new Date(session.startTime).toLocaleTimeString('id-ID')}</span>
+          <span><strong>Modal Awal:</strong> ${formatRp(session.startCash)}</span>
+          <span><strong>Penjualan Sesi Ini:</strong> ${formatRp(sessionSales)}</span>
+        `;
+      }
+    }
+
+    function openOpenSessionModal() {
+      const modal = document.getElementById('session-modal');
+      document.getElementById('session-modal-title').innerText = "Buka Sesi Kasir Warhome";
+      document.getElementById('session-modal-body').innerHTML = `
+        <p class="text-sm text-gray-600">Masukkan modal kas awal untuk memulai transaksi hari ini.</p>
+        <div>
+          <label class="text-xs font-semibold text-gray-600">Saldo Kas Awal (Rp)</label>
+          <input type="number" id="start-cash-input" value="100000" class="w-full border rounded-lg p-2 text-sm mt-1">
+        </div>
+        <button onclick="startSession()" class="w-full bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 rounded-lg text-sm shadow">
+          Mulai Sesi
+        </button>
+      `;
+      modal.classList.remove('hidden');
+    }
+
+    function startSession() {
+      const cash = parseFloat(document.getElementById('start-cash-input').value) || 0;
+      session = {
+        startTime: new Date().toISOString(),
+        startCash: cash
+      };
+      localStorage.setItem('warhome_session', JSON.stringify(session));
+      document.getElementById('session-modal').classList.add('hidden');
+      checkSession();
+    }
+
+    function openCloseSessionModal() {
+      if(!session) return alert("Sesi kasir belum dibuka!");
+      const sessionSales = transactions
+        .filter(t => new Date(t.date) >= new Date(session.startTime))
+        .reduce((sum, t) => sum + t.total, 0);
+
+      const modal = document.getElementById('session-modal');
+      document.getElementById('session-modal-title').innerText = "Tutup Sesi Kasir";
+      document.getElementById('session-modal-body').innerHTML = `
+        <div class="space-y-2 text-sm text-gray-600">
+          <div class="flex justify-between"><span>Modal Kas Awal:</span> <span>${formatRp(session.startCash)}</span></div>
+          <div class="flex justify-between"><span>Total Penjualan:</span> <span>${formatRp(sessionSales)}</span></div>
+          <div class="flex justify-between font-bold border-t pt-1"><span>Ekspektasi Kas Fisik:</span> <span>${formatRp(session.startCash + sessionSales)}</span></div>
+        </div>
+        <div class="pt-2">
+          <label class="text-xs font-semibold text-gray-600">Jumlah Kas Fisik Aktual (Rp)</label>
+          <input type="number" id="actual-cash-input" value="${session.startCash + sessionSales}" class="w-full border rounded-lg p-2 text-sm mt-1">
+        </div>
+        <button onclick="closeSession()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-sm shadow">
+          Selesaikan & Tutup Sesi
+        </button>
+      `;
+      modal.classList.remove('hidden');
+    }
+
+    function closeSession() {
+      localStorage.removeItem('warhome_session');
+      session = null;
+      document.getElementById('session-modal').classList.add('hidden');
+      alert("Sesi kasir berhasil ditutup!");
+      checkSession();
+    }
+
+    // Filter Kategori
+    function renderCategoryFilters() {
+      const categories = ['All', 'Minuman', 'Makanan', 'Snack'];
+      const container = document.getElementById('category-filters');
+      container.innerHTML = categories.map(cat => {
+        const icon = categoryIcons[cat] || '<i class="fas fa-th"></i>';
+        const active = selectedCategory === cat ? 'bg-amber-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200';
+        return `
+          <button onclick="setCategory('${cat}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1 whitespace-nowrap transition ${active}">
+            <span>${icon}</span>
+            <span>${cat === 'All' ? 'Semua' : cat}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setCategory(cat) {
+      selectedCategory = cat;
+      renderCategoryFilters();
+      renderProducts();
+    }
+
+    // Render Grid Produk Kasir
+    function renderProducts() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const grid = document.getElementById('product-grid');
+      
+      const filtered = products.filter(p => {
+        const matchCat = selectedCategory === 'All' || p.category === selectedCategory;
+        const matchSearch = p.name.toLowerCase().includes(search);
+        return matchCat && matchSearch;
+      });
+
+      grid.innerHTML = filtered.map(p => `
+        <div onclick="addToCart(${p.id})" class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm hover:shadow-md cursor-pointer transition flex flex-col justify-between space-y-2">
+          <div class="flex justify-between items-start">
+            <span class="text-xl">${categoryIcons[p.category]}</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">${p.category}</span>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-gray-800 line-clamp-2">${p.name}</h3>
+            <p class="text-xs text-amber-800 font-bold mt-1">${formatRp(p.price)}</p>
+          </div>
+          <div class="text-[10px] text-gray-400 border-t pt-1 flex justify-between">
+            <span>Stok: ${p.stock}</span>
+            <span class="text-amber-700 font-medium">+ Tambah</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Keranjang Belanja
+    function addToCart(id) {
+      if(!session) return alert("Buka sesi kasir terlebih dahulu!");
+      const prod = products.find(p => p.id === id);
+      if(!prod || prod.stock <= 0) return alert("Stok produk habis!");
+
+      const existing = cart.find(item => item.id === id);
+      if(existing) {
+        if(existing.qty >= prod.stock) return alert("Melebihi stok yang tersedia!");
+        existing.qty++;
+      } else {
+        cart.push({ ...prod, qty: 1 });
+      }
+      renderCart();
+    }
+
+    function updateQty(id, delta) {
+      const item = cart.find(i => i.id === id);
+      if(!item) return;
+      const prod = products.find(p => p.id === id);
+
+      item.qty += delta;
+      if(item.qty > prod.stock) {
+        item.qty = prod.stock;
+        alert("Batas stok tercapai!");
+      }
+
+      if(item.qty <= 0) {
+        cart = cart.filter(i => i.id !== id);
+      }
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = [];
+      renderCart();
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cart-items');
+      if(cart.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-gray-400 space-y-2">
+            <i class="fas fa-shopping-basket text-3xl"></i>
+            <p class="text-xs">Keranjang masih kosong</p>
+          </div>
+        `;
+      } else {
+        container.innerHTML = cart.map(item => `
+          <div class="flex items-center justify-between pt-2">
+            <div class="flex-1 pr-2">
+              <h4 class="font-semibold text-xs text-gray-800">${item.name}</h4>
+              <span class="text-[10px] text-amber-800 font-bold">${formatRp(item.price)}</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="updateQty(${item.id}, -1)" class="w-6 h-6 bg-gray-200 text-gray-700 rounded-full font-bold text-xs flex items-center justify-center hover:bg-gray-300">-</button>
+              <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
+              <button onclick="updateQty(${item.id}, 1)" class="w-6 h-6 bg-amber-700 text-white rounded-full font-bold text-xs flex items-center justify-center hover:bg-amber-800">+</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const tax = Math.round(subtotal * 0.11);
+      const total = subtotal + tax;
+
+      document.getElementById('cart-subtotal').innerText = formatRp(subtotal);
+      document.getElementById('cart-tax').innerText = formatRp(tax);
+      document.getElementById('cart-total').innerText = formatRp(total);
+    }
+
+    // Direct Checkout & Tampilkan Pop-Up Resi
+    function processDirectCheckout() {
+      if(cart.length === 0) return alert("Keranjang belanja masih kosong!");
+      if(!session) return alert("Buka sesi kasir terlebih dahulu!");
+
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const tax = Math.round(subtotal * 0.11);
+      const total = subtotal + tax;
+
+      const newTrx = {
+        id: 'TRX-' + Date.now().toString().slice(-6),
+        date: new Date().toISOString(),
+        items: [...cart],
+        subtotal: subtotal,
+        tax: tax,
+        total: total
+      };
+
+      // Potong Stok
+      cart.forEach(c => {
+        const p = products.find(prod => prod.id === c.id);
+        if(p) p.stock -= c.qty;
+      });
+
+      transactions.unshift(newTrx);
+      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
+      localStorage.setItem('warhome_products', JSON.stringify(products));
+
+      // Reset
+      clearCart();
+      renderProducts();
+      checkSession();
+
+      // Tampilkan Pop-up Resi Interaktif
+      showReceiptModal(newTrx);
+    }
+
+    // Modal Pop-Up Resi
+    function showReceiptModal(trx) {
+      document.getElementById('rec-id').innerText = trx.id;
+      document.getElementById('rec-date').innerText = new Date(trx.date).toLocaleDateString('id-ID') + ' ' + new Date(trx.date).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+      
+      document.getElementById('rec-items').innerHTML = trx.items.map(item => `
+        <div>
+          <div class="flex justify-between">
+            <span class="font-bold">${item.name}</span>
+            <span>${formatRp(item.price * item.qty)}</span>
+          </div>
+          <div class="text-[10px] text-gray-600">${item.qty} x ${formatRp(item.price)}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('rec-subtotal').innerText = formatRp(trx.subtotal);
+      document.getElementById('rec-tax').innerText = formatRp(trx.tax);
+      document.getElementById('rec-total').innerText = formatRp(trx.total);
+
+      document.getElementById('receipt-modal').classList.remove('hidden');
+    }
+
+    function closeReceiptModal() {
+      document.getElementById('receipt-modal').classList.add('hidden');
+    }
+
+    // TAB 2: Riwayat & Laporan Bulanan
+    function populateYearFilter() {
+      const yearSelect = document.getElementById('filter-year');
+      const currentYear = new Date().getFullYear();
+      yearSelect.innerHTML = '';
+      for(let y = currentYear; y >= currentYear - 3; y--) {
+        yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+      }
+    }
+
+    function renderHistory() {
+      const monthFilter = document.getElementById('filter-month').value;
+      const yearFilter = parseInt(document.getElementById('filter-year').value);
+
+      const filtered = transactions.filter(t => {
+        const d = new Date(t.date);
+        const matchYear = d.getFullYear() === yearFilter;
+        const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
+        return matchYear && matchMonth;
+      });
+
+      // Stats
+      const totalRev = filtered.reduce((s, t) => s + t.total, 0);
+      const totalItems = filtered.reduce((s, t) => s + t.items.reduce((is, i) => is + i.qty, 0), 0);
+
+      document.getElementById('stat-monthly-revenue').innerText = formatRp(totalRev);
+      document.getElementById('stat-monthly-count').innerText = `${filtered.length} Transaksi`;
+      document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
+
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = filtered.map(t => `
+        <tr class="hover:bg-gray-50">
+          <td class="p-3 font-bold text-xs">${t.id}</td>
+          <td class="p-3 text-xs">${new Date(t.date).toLocaleString('id-ID')}</td>
+          <td class="p-3 text-xs">
+            ${t.items.map(i => `${i.name} (x${i.qty})`).join(', ')}
+          </td>
+          <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.total)}</td>
+          <td class="p-3 text-center">
+            <button onclick='showReceiptModal(${JSON.stringify(t)})' class="text-amber-700 hover:text-amber-900 text-xs font-semibold">
+              <i class="fas fa-print mr-1"></i> Cetak
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function printMonthlyReport() {
+      window.print();
+    }
+
+    // Visual Chart Grafik Penjualan
+    function initChart() {
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      if(myChart) myChart.destroy();
+
+      const chartData = getChartData(currentChartPeriod);
+
+      myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: 'Pendapatan (Rp)',
+            data: chartData.data,
+            borderColor: '#92400e',
+            backgroundColor: 'rgba(146, 64, 14, 0.1)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(val) { return 'Rp ' + val.toLocaleString('id-ID'); }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChartPeriod(period) {
+      currentChartPeriod = period;
+      ['daily','weekly','monthly','yearly'].forEach(p => {
+        const btn = document.getElementById(`chart-btn-${p}`);
+        if(p === period) {
+          btn.className = "px-3 py-1.5 rounded-md bg-white shadow-sm text-amber-800 font-bold";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900";
+        }
+      });
+      initChart();
+    }
+
+    function getChartData(period) {
+      const labels = [];
+      const data = [];
+      const now = new Date();
+
+      if(period === 'daily') {
+        for(let i = 6; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          labels.push(d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' }));
+          
+          const total = transactions
+            .filter(t => new Date(t.date).toDateString() === d.toDateString())
+            .reduce((s, t) => s + t.total, 0);
+          data.push(total);
+        }
+      } else if(period === 'weekly') {
+        for(let i = 3; i >= 0; i--) {
+          labels.push(`Minggu -${i}`);
+          data.push(Math.floor(Math.random() * 500000) + 100000);
+        }
+      } else if(period === 'monthly') {
+        const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        for(let i = 0; i < 12; i++) {
+          labels.push(months[i]);
+          const total = transactions
+            .filter(t => new Date(t.date).getMonth() === i)
+            .reduce((s, t) => s + t.total, 0);
+          data.push(total);
+        }
+      } else if(period === 'yearly') {
+        const y = now.getFullYear();
+        for(let i = 2; i >= 0; i--) {
+          labels.push((y - i).toString());
+          const total = transactions
+            .filter(t => new Date(t.date).getFullYear() === (y - i))
+            .reduce((s, t) => s + t.total, 0);
+          data.push(total);
+        }
+      }
+
+      return { labels, data };
+    }
+
+    // TAB 3: Kelola Products CRUD
+    function renderProductTable() {
+      const tbody = document.getElementById('products-table-body');
+      tbody.innerHTML = products.map(p => `
+        <tr class="hover:bg-gray-50">
+          <td class="p-3 text-lg">${categoryIcons[p.category]}</td>
+          <td class="p-3 font-semibold text-gray-800">${p.name}</td>
+          <td class="p-3"><span class="px-2 py-0.5 bg-gray-100 text-xs rounded-full">${p.category}</span></td>
+          <td class="p-3 text-right font-bold text-amber-800">${formatRp(p.price)}</td>
+          <td class="p-3 text-center">${p.stock}</td>
+          <td class="p-3 text-center space-x-2">
+            <button onclick="editProduct(${p.id})" class="text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i></button>
+            <button onclick="deleteProduct(${p.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openProductModal(isEdit = false) {
+      if(!isEdit) {
+        document.getElementById('product-form').reset();
+        document.getElementById('prod-id').value = '';
+        document.getElementById('product-modal-title').innerText = "Tambah Menu Baru";
+      }
+      document.getElementById('product-modal').classList.remove('hidden');
+    }
+
+    function closeProductModal() {
+      document.getElementById('product-modal').classList.add('hidden');
+    }
+
+    function editProduct(id) {
+      const p = products.find(prod => prod.id === id);
+      if(!p) return;
+      document.getElementById('prod-id').value = p.id;
+      document.getElementById('prod-name').value = p.name;
+      document.getElementById('prod-category').value = p.category;
+      document.getElementById('prod-price').value = p.price;
+      document.getElementById('prod-stock').value = p.stock;
+      document.getElementById('product-modal-title').innerText = "Edit Menu Warhome";
+      openProductModal(true);
+    }
+
+    function saveProduct(e) {
+      e.preventDefault();
+      const id = document.getElementById('prod-id').value;
+      const name = document.getElementById('prod-name').value;
+      const category = document.getElementById('prod-category').value;
+      const price = parseFloat(document.getElementById('prod-price').value);
+      const stock = parseInt(document.getElementById('prod-stock').value);
+
+      if(id) {
+        const index = products.findIndex(p => p.id === parseInt(id));
+        if(index !== -1) {
+          products[index] = { id: parseInt(id), name, category, price, stock };
+        }
+      } else {
+        const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+        products.push({ id: newId, name, category, price, stock });
+      }
+
+      localStorage.setItem('warhome_products', JSON.stringify(products));
+      closeProductModal();
+      renderProductTable();
+      renderProducts();
+    }
+
+    function deleteProduct(id) {
+      if(confirm("Yakin ingin menghapus menu ini?")) {
+        products = products.filter(p => p.id !== id);
+        localStorage.setItem('warhome_products', JSON.stringify(products));
+        renderProductTable();
+        renderProducts();
+      }
+    }
+  </script>
+</body>
+</html>
