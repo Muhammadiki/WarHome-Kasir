@@ -400,6 +400,14 @@
     // Ganti dengan firebaseConfig milikmu dari console.firebase.google.com bila ingin mode Cloud
     // ----------------------------------------------------
     // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCn3F3DA-_85PbVRSruM5_Xu-bHVwrlQSg",
   authDomain: "warhome-pos.firebaseapp.com",
@@ -409,6 +417,10 @@ const firebaseConfig = {
   appId: "1:493124045860:web:f86f968572e1d02ecd5cb1",
   measurementId: "G-CMNPL2RHEN"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
     let useFirebase = false;
     let db = null;
