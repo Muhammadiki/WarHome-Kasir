@@ -24,7 +24,6 @@
         padding: 5mm; 
         box-shadow: none; 
       }
-      /* Dinamis sesuai ukuran kertas yang dipilih saat print */
       .print-58mm { width: 58mm !important; font-size: 10px !important; }
       .print-80mm { width: 80mm !important; font-size: 12px !important; }
       .no-print { display: none !important; }
@@ -33,44 +32,53 @@
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
 
+  <!-- HEADER NAVBAR TUNGGAL (RAPI & TERPADU) -->
   <header class="bg-amber-800 text-white shadow-md sticky top-0 z-20 no-print">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-3">
+      
+      <!-- Brand & Status Koneksi -->
       <div class="flex items-center space-x-3">
-        <div class="bg-amber-900 p-2.5 rounded-full text-amber-200">
-          <i class="fas fa-store text-xl"></i>
+        <div class="bg-amber-900 p-2 rounded-full text-amber-200">
+          <i class="fas fa-store text-lg"></i>
         </div>
         <div>
-          <h1 class="font-bold text-xl tracking-wide leading-tight flex items-center gap-2">
-            WARHOME 
-            <span id="cloud-badge" class="bg-amber-950 text-amber-300 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all">
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg tracking-wide leading-tight">WARHOME</h1>
+            <span id="cloud-badge" class="bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all">
               Menghubungkan...
             </span>
-          </h1>
-          <p class="text-xs text-amber-200">Jalan Ahmad Yani Handel 2 Muara Jawa | 081229830017</p>
+          </div>
+          <p class="text-[11px] text-amber-200">Jl. A. Yani Handel 2 Muara Jawa | 081229830017</p>
         </div>
       </div>
-      <nav class="flex space-x-1 sm:space-x-2">
-        <button onclick="switchTab('pos')" id="tab-pos" class="px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition">
-          <i class="fas fa-cash-register mr-1"></i> Kasir
-        </button>
-        <button onclick="switchTab('history')" id="tab-history" class="px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition">
-          <i class="fas fa-chart-line mr-1"></i> Riwayat & Grafik
-        </button>
-        <button onclick="switchTab('products')" id="tab-products" class="px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition">
-          <i class="fas fa-utensils mr-1"></i> Kelola Menu
-        </button>
-      </nav>
+
+      <!-- Informasi Sesi Kasir & Navigasi Utama -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div id="session-info-text" class="text-xs text-amber-100 bg-amber-900/60 px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <!-- Injected via JS -->
+        </div>
+        <div id="session-action-btn"></div>
+
+        <nav class="flex space-x-1 border-l border-amber-700/60 pl-3">
+          <button onclick="switchTab('pos')" id="tab-pos" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition">
+            <i class="fas fa-cash-register mr-1"></i> Kasir
+          </button>
+          <button onclick="switchTab('history')" id="tab-history" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition">
+            <i class="fas fa-chart-line mr-1"></i> Riwayat
+          </button>
+          <button onclick="switchTab('products')" id="tab-products" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition">
+            <i class="fas fa-utensils mr-1"></i> Menu
+          </button>
+        </nav>
+      </div>
+
     </div>
   </header>
 
-  <div id="session-banner" class="bg-amber-100 border-b border-amber-200 px-4 py-2 no-print">
-    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center text-xs sm:text-sm text-amber-900 gap-2">
-      <div id="session-info-text" class="flex items-center space-x-4"></div>
-      <div class="flex items-center space-x-2" id="session-action-btn"></div>
-    </div>
-  </div>
-
+  <!-- KONTEN UTAMA -->
   <main class="max-w-7xl mx-auto p-4 flex-1 w-full">
+    
+    <!-- TAB 1: KASIR (POS) -->
     <div id="view-pos" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2 flex flex-col space-y-4">
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row gap-3 justify-between items-center">
@@ -80,10 +88,10 @@
           </div>
           <div class="flex space-x-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0" id="category-filters"></div>
         </div>
-        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto max-h-[calc(100vh-280px)] p-1"></div>
+        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto max-h-[calc(100vh-250px)] p-1"></div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-200px)] sticky top-20">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-180px)] sticky top-20">
         <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
           <h2 class="font-bold text-gray-700 flex items-center text-base">
             <i class="fas fa-shopping-cart text-amber-700 mr-2"></i> Keranjang Pesanan
@@ -104,6 +112,7 @@
       </div>
     </div>
 
+    <!-- TAB 2: RIWAYAT & GRAFIK -->
     <div id="view-history" class="hidden space-y-6">
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
@@ -159,6 +168,7 @@
       </div>
     </div>
 
+    <!-- TAB 3: KELOLA MENU -->
     <div id="view-products" class="hidden space-y-6">
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div><h2 class="font-bold text-lg text-gray-800">Kelola Menu</h2><p class="text-xs text-gray-500">Tambah, edit, atau hapus menu Warhome</p></div>
@@ -175,6 +185,7 @@
     </div>
   </main>
 
+  <!-- MODAL BUKA KASIR -->
   <div id="open-session-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
       <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4"><i class="fas fa-door-open text-amber-700 mr-2"></i> Buka Sesi Kasir</h3>
@@ -192,6 +203,7 @@
     </div>
   </div>
 
+  <!-- MODAL TUTUP KASIR -->
   <div id="close-session-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
       <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4"><i class="fas fa-door-closed text-red-600 mr-2"></i> Tutup Sesi Kasir</h3>
@@ -199,12 +211,11 @@
     </div>
   </div>
 
-  <!-- MODAL RESI DENGAN PILIHAN DUAL SIZE PRINTER (58mm / 80mm) -->
+  <!-- MODAL RESI DUAL SIZE (58mm / 80mm) -->
   <div id="receipt-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div id="receipt-modal-card" class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200">
       <button onclick="closeModal('receipt-modal')" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl no-print">&times;</button>
 
-      <!-- PILIHAN UKURAN KERTAS PRINTER -->
       <div class="mb-3 flex items-center justify-between border-b pb-2 no-print">
         <span class="text-xs font-semibold text-gray-600"><i class="fas fa-scroll mr-1"></i> Ukuran Kertas:</span>
         <div class="flex bg-gray-100 p-0.5 rounded-lg text-xs font-bold">
@@ -213,7 +224,6 @@
         </div>
       </div>
 
-      <!-- AREA TAMPILAN RESI TERMAL -->
       <div id="receipt-modal-content" class="bg-white text-black p-2 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-58mm">
         <div class="text-center space-y-1">
           <div class="mx-auto w-10 h-10 bg-amber-800 text-white rounded-full flex items-center justify-center font-bold text-lg mb-1">W</div>
@@ -241,7 +251,6 @@
         </div>
       </div>
       
-      <!-- OPSI CETAK MULTI-MODE -->
       <div class="mt-4 flex flex-col sm:flex-row gap-2 no-print">
         <button onclick="window.print()" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow flex items-center justify-center space-x-1">
           <i class="fas fa-print"></i><span>Cetak / PDF</span>
@@ -254,6 +263,7 @@
     </div>
   </div>
 
+  <!-- MODAL EDIT MENU -->
   <div id="product-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
       <h3 id="product-modal-title" class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">Tambah Menu</h3>
@@ -282,13 +292,13 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
+      apiKey: "AIzaSyCn3F3DA-_85PbVRSruM5_Xu-bHVwrlQSg",
       authDomain: "warhome-pos.firebaseapp.com",
-      databaseURL: "https://warhome-pos-default-rtdb.firebaseio.com",
       projectId: "warhome-pos",
-      storageBucket: "warhome-pos.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcdef"
+      storageBucket: "warhome-pos.firebasestorage.app",
+      messagingSenderId: "493124045860",
+      appId: "1:493124045860:web:f86f968572e1d02ecd5cb1",
+      measurementId: "G-CMNPL2RHEN"
     };
 
     let useFirebase = false;
@@ -341,7 +351,6 @@
       document.getElementById(id).classList.add('hidden');
     }
 
-    // MANAJEMEN UKURAN KERTAS (58mm vs 80mm)
     function setPaperSize(size) {
       currentPaperSize = size;
       localStorage.setItem('warhome_paper_size', size);
@@ -371,13 +380,13 @@
       if (!badge) return;
       if (status === 'cloud') {
         badge.className = "bg-green-900 text-green-200 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
-        badge.innerHTML = `<i class="fas fa-wifi text-[9px]"></i> Live Cloud (Synced)`;
+        badge.innerHTML = `<i class="fas fa-wifi text-[9px]"></i> Live Cloud`;
       } else if (status === 'syncing') {
         badge.className = "bg-yellow-900 text-yellow-200 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
-        badge.innerHTML = `<i class="fas fa-sync fa-spin text-[9px]"></i> Mengunggah Data...`;
+        badge.innerHTML = `<i class="fas fa-sync fa-spin text-[9px]"></i> Syncing...`;
       } else {
         badge.className = "bg-amber-950 text-amber-300 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
-        badge.innerHTML = `<i class="fas fa-hdd text-[9px]"></i> Local Mode (Offline)`;
+        badge.innerHTML = `<i class="fas fa-hdd text-[9px]"></i> Local Mode`;
       }
     }
 
@@ -462,23 +471,23 @@
       document.getElementById('view-history').classList.add('hidden');
       document.getElementById('view-products').classList.add('hidden');
 
-      document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition";
-      document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition";
-      document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition";
+      document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
+      document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
+      document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
 
       if(tab === 'pos') {
         document.getElementById('view-pos').classList.remove('hidden');
-        document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition";
+        document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
         renderProducts();
       } else if(tab === 'history') {
         document.getElementById('view-history').classList.remove('hidden');
-        document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition";
+        document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
         populateYearFilter();
         renderHistory();
         initChart();
       } else if(tab === 'products') {
         document.getElementById('view-products').classList.remove('hidden');
-        document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-900 text-amber-100 transition";
+        document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
         renderProductTable();
       }
     }
@@ -488,10 +497,10 @@
       const actionBtn = document.getElementById('session-action-btn');
 
       if (!session) {
-        bannerText.innerHTML = `<span class="text-red-700 font-bold flex items-center"><i class="fas fa-exclamation-circle mr-1.5"></i> Sesi Kasir Belum Dibuka!</span>`;
+        bannerText.innerHTML = `<span class="text-amber-200 font-semibold"><i class="fas fa-exclamation-circle text-red-400 mr-1"></i> Kasir Belum Dibuka</span>`;
         actionBtn.innerHTML = `
-          <button onclick="openOpenSessionModal()" class="bg-amber-700 hover:bg-amber-800 text-white px-3 py-1 rounded text-xs font-semibold shadow transition flex items-center">
-            <i class="fas fa-door-open mr-1"></i> Buka Sesi Kasir
+          <button onclick="openOpenSessionModal()" class="bg-amber-700 hover:bg-amber-600 text-white px-2.5 py-1 rounded text-xs font-semibold shadow transition flex items-center">
+            <i class="fas fa-door-open mr-1"></i> Buka Kasir
           </button>
         `;
       } else {
@@ -500,13 +509,13 @@
           .reduce((sum, t) => sum + (t.total || 0), 0);
 
         bannerText.innerHTML = `
-          <span><strong>Buka Sesi:</strong> ${new Date(session.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
-          <span><strong>Modal Awal:</strong> ${formatRp(session.startCash)}</span>
-          <span><strong>Penjualan Sesi Ini:</strong> ${formatRp(sessionSales)}</span>
+          <span><i class="fas fa-clock mr-1 text-amber-300"></i> ${new Date(session.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
+          <span><i class="fas fa-wallet mr-1 text-amber-300"></i> ${formatRp(session.startCash)}</span>
+          <span class="font-bold text-amber-200"><i class="fas fa-chart-line mr-1"></i> ${formatRp(sessionSales)}</span>
         `;
         actionBtn.innerHTML = `
-          <button onclick="openCloseSessionModal()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-semibold shadow transition flex items-center">
-            <i class="fas fa-door-closed mr-1"></i> Tutup Kasir & Rekap
+          <button onclick="openCloseSessionModal()" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded text-xs font-semibold shadow transition flex items-center">
+            <i class="fas fa-door-closed mr-1"></i> Tutup & Rekap
           </button>
         `;
       }
@@ -746,7 +755,6 @@
       document.getElementById('receipt-modal').classList.remove('hidden');
     }
 
-    // WEB BLUETOOTH THERMAL PRINTER (DUAL SIZE: 58mm / 80mm)
     async function connectBluetoothPrinter() {
       try {
         bluetoothDevice = await navigator.bluetooth.requestDevice({
@@ -794,7 +802,6 @@
         if (!connected) return;
       }
 
-      // Deteksi Lebar Karakter berdasarkan Pilihan Ukuran Kertas
       const is80mm = currentPaperSize === '80mm';
       const LINE_WIDTH = is80mm ? 48 : 32;
       const DIVIDER = "-".repeat(LINE_WIDTH) + "\n";
