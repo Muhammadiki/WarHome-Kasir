@@ -639,6 +639,30 @@
       }
     }
 
+    function updateHeaderSummary() {
+    // Ambil data transaksi dari localStorage atau Firebase
+    const allTransactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+    
+    // Hitung total omset keseluruhan (atau filter khusus hari ini jika diinginkan)
+    let totalOmzetToday = 0;
+    const todayStr = new Date().toDateString();
+
+    allTransactions.forEach(t => {
+        const trxDate = new Date(t.timestamp || t.date || 0).toDateString();
+        // Jika ingin menghitung omset khusus hari ini:
+        if (trxDate === todayStr) {
+            totalOmzetToday += parseFloat(t.total || t.subtotal || 0);
+        }
+    });
+
+    // Cari elemen HTML di header yang menampilkan omset Rp 0 tersebut lalu perbarui nilainya
+    // (Sesuaikan ID elemen HTML header Anda, contoh: id="header-omset")
+    const headerOmsetEl = document.getElementById('header-omset');
+    if (headerOmsetEl) {
+        headerOmsetEl.innerText = formatRp(totalOmzetToday);
+    }
+}
+
     function openOpenSessionModal() {
       document.getElementById('start-cash-input').value = 100000;
       document.getElementById('open-session-modal').classList.remove('hidden');
