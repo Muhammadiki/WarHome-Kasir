@@ -814,44 +814,69 @@
     }
 
     function processDirectCheckout() {
-      if (cart.length === 0) return alert("Keranjang belanja masih kosong!");
-      if (!session) return openOpenSessionModal();
+    if (cart.length === 0) {
+        alert("Keranjang masih kosong!");
+        return;
+    }
 
-      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-      const tax = Math.round(subtotal * 0.11);
-      const total = subtotal + tax;
-      const trxId = 'TRX-' + Date.now().toString().slice(-6);
+    let subtotal = 0;
+    let totalProfit = 0;
+    let totalTax = 0;
+    let totalItemsCount = 0;
 
-      const newTrx = {
-        id: trxId,
-        date: new Date().toISOString(),
-        items: [...cart],
+    const transactionItems = cart.map(cartItem => {
+        // Cari data menu asli untuk mengambil HPP-nya
+        const menuProduct = products.find(p => p.id === cartItem.id) || {};
+        const itemHpp = menuProduct.hpp || 0;
+        const itemProfit = (cartItem.price - itemHpp) * cartItem.qty;
+
+        subtotal += cartItem.price * cartItem.qty;
+        totalProfit += itemProfit;
+        totalItemsCount += cartItem.qty;
+
+        return {
+            id: cartItem.id,
+            name: cartItem.name,
+            price: cartItem.price,
+            hpp: itemHpp,
+            qty: cartItem.qty,
+            profit: itemProfit
+        };
+    });
+
+    const tax = subtotal * 0.11; // PPN 11%
+    const grandTotal = subtotal + tax;
+
+    const transactionId = 'TRX-' + Math.floor(100000 + Math.random() * 900000);
+    const newTransaction = {
+        id: transactionId,
+        timestamp: new Date().toISOString(),
+        items: transactionItems,
         subtotal: subtotal,
         tax: tax,
-        total: total
-      };
+        total: grandTotal,
+        profit: totalProfit // <-- Laba bersih total per transaksi
+    };
 
-      const updatedProducts = products.map(p => {
-        const itemInCart = cart.find(c => c.id === p.id);
-        if (itemInCart) return { ...p, stock: p.stock - itemInCart.qty };
-        return p;
-      });
+    // Simpan ke localStorage
+    const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+    localTrx.unshift(newTransaction);
+    localStorage.setItem('warhome_transactions', JSON.stringify(localTrx));
 
-      products = updatedProducts;
-      transactions.unshift(newTrx);
-      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
-      localStorage.setItem('warhome_products', JSON.stringify(products));
-
-      if (useFirebase && db && navigator.onLine) {
-        db.ref('transactions/' + trxId).set(newTrx);
-        db.ref('products').set(updatedProducts);
-      }
-
-      clearCart();
-      renderProducts();
-      checkSession();
-      showReceiptModal(newTrx);
+    // Simpan ke Firebase jika aktif
+    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+        firebase.database().ref('transactions/' + transactionId).set(newTransaction)
+            .catch(err => console.error("Gagal simpan transaksi ke Firebase:", err));
     }
+
+    // Kosongkan keranjang & perbarui tampilan
+    cart = [];
+    if (typeof updateCartUI === 'function') updateCartUI();
+    if (typeof renderProducts === 'function') renderProducts();
+    if (typeof renderHistory === 'function') renderHistory();
+
+    alert("Transaksi berhasil disimpan! ID: " + transactionId);
+}
 
     function showReceiptModal(trx) {
       currentActiveTransaction = trx;
