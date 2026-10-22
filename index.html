@@ -113,7 +113,7 @@
     <!-- TAB 2: RIWAYAT & GRAFIK (PROFIT & LOSS ADDED) -->
     <div id="view-history" class="hidden space-y-6">
       
-      <!-- 1. Baris Filter Utama -->
+      <!-- 1. Baris Filter Utama (Hari, Bulan, Tahun) -->
       <div class="flex flex-wrap items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
         <div class="flex items-center gap-2">
           <label class="text-xs font-semibold text-gray-600">Tanggal:</label>
@@ -155,7 +155,7 @@
         </button>
       </div> 
     
-      <!-- 2. CARD GRAFIK LENGKAP -->
+      <!-- 2. CARD GRAFIK ANALISIS -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b pb-3">
           <div>
@@ -192,6 +192,7 @@
           </div>
         </div>
         
+        <!-- Statistik Kartu Ringkasan -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div class="bg-amber-50 border border-amber-200 p-3.5 rounded-lg"><span class="text-[11px] text-amber-800 font-semibold block">Total Omset</span><span id="stat-monthly-revenue" class="text-lg font-bold text-amber-900">Rp 0</span></div>
           <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-lg"><span class="text-[11px] text-emerald-800 font-semibold block">Est. Laba Bersih</span><span id="stat-monthly-profit" class="text-lg font-bold text-emerald-900">Rp 0</span></div>
@@ -199,15 +200,24 @@
           <div class="bg-purple-50 border border-purple-200 p-3.5 rounded-lg"><span class="text-[11px] text-purple-800 font-semibold block">Item Terjual</span><span id="stat-monthly-items" class="text-lg font-bold text-purple-900">0 Item</span></div>
         </div> 
     
+        <!-- Tabel Riwayat -->
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
-              <tr><th class="p-3">ID TRX</th><th class="p-3">Waktu</th><th class="p-3">Rincian Item</th><th class="p-3 text-right">Total Omset</th><th class="p-3 text-right text-emerald-700">Est. Laba</th><th class="p-3 text-center">Aksi</th></tr>
+              <tr>
+                <th class="p-3">ID TRX</th>
+                <th class="p-3">Waktu</th>
+                <th class="p-3">Rincian Item</th>
+                <th class="p-3 text-right">Total Omset</th>
+                <th class="p-3 text-right text-emerald-700">Est. Laba</th>
+                <th class="p-3 text-center">Aksi</th>
+              </tr>
             </thead>
             <tbody id="history-table-body" class="divide-y"></tbody>
           </table>
         </div>
       </div>
+    
     </div> <!-- Penutup <div id="view-history"> -->
 
     <!-- TAB 3: KELOLA MENU -->
