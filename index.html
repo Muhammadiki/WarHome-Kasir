@@ -152,17 +152,31 @@
             <p class="text-xs text-gray-500">Rekap bulanan, cetak ulang resi, dan kelola data</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
-              <option value="all">Semua Bulan</option>
-              <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
-              <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
-              <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
-              <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
-            </select>
-            <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
-            <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
-              <i class="fas fa-print mr-1.5"></i> Cetak Laporan
-            </button>
+              <!-- Pilihan Jenis Filter Waktu -->
+              <select id="filter-type" onchange="toggleFilterType()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 font-semibold text-gray-700">
+                  <option value="daily">Harian</option>
+                  <option value="monthly" selected>Bulanan</option>
+                  <option value="yearly">Tahunan</option>
+              </select>
+          
+              <!-- Input Tanggal (Hanya muncul saat mode Harian dipilih) -->
+              <input type="date" id="filter-date" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 hidden">
+          
+              <!-- Pilih Bulan (Hanya muncul saat mode Bulanan dipilih) -->
+              <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
+                  <option value="all">Semua Bulan</option>
+                  <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
+                  <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
+                  <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
+                  <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
+              </select>
+          
+              <!-- Pilih Tahun -->
+              <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
+          
+              <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
+                  <i class="fas fa-print mr-1.5"></i> Cetak Laporan
+              </button>
           </div>
         </div>
 
@@ -1305,6 +1319,129 @@
           renderProducts();
         }
       }
+    }
+
+    function toggleFilterType() {
+        const filterType = document.getElementById('filter-type').value;
+        const dateInput = document.getElementById('filter-date');
+        const monthSelect = document.getElementById('filter-month');
+        
+        if (!dateInput || !monthSelect) return;
+    
+        if (filterType === 'daily') {
+            dateInput.classList.remove('hidden');
+            monthSelect.classList.add('hidden');
+            if (!dateInput.value) dateInput.valueAsDate = new Date();
+        } else if (filterType === 'monthly') {
+            dateInput.classList.add('hidden');
+            monthSelect.classList.remove('hidden');
+        } else if (filterType === 'yearly') {
+            dateInput.classList.add('hidden');
+            monthSelect.classList.add('hidden');
+        }
+        renderHistory();
+    }
+    
+    function renderHistory() {
+        const transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+        const sessionHistory = JSON.parse(localStorage.getItem('warhome_session_history')) || [];
+        
+        const combinedHistory = [
+            ...transactions.map(t => ({ ...t, recordType: 'TRANSACTION' })),
+            ...sessionHistory.map(s => ({ ...s, recordType: 'SESSION' }))
+        ];
+    
+        combinedHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+        const filterType = document.getElementById('filter-type') ? document.getElementById('filter-type').value : 'monthly';
+        const selectedDate = document.getElementById('filter-date') ? document.getElementById('filter-date').value : '';
+        const selectedMonth = document.getElementById('filter-month') ? document.getElementById('filter-month').value : 'all';
+        const selectedYear = document.getElementById('filter-year') ? document.getElementById('filter-year').value : 'all';
+    
+        const filteredHistory = combinedHistory.filter(item => {
+            const itemDate = new Date(item.timestamp);
+            const itemYear = itemDate.getFullYear().toString();
+            const itemMonth = itemDate.getMonth().toString();
+            const itemDateStr = itemDate.toISOString().split('T')[0];
+    
+            const matchesYear = selectedYear === 'all' || itemYear === selectedYear;
+            const matchesMonth = selectedMonth === 'all' || itemMonth === selectedMonth;
+    
+            if (filterType === 'daily') {
+                return selectedDate ? itemDateStr === selectedDate : true;
+            } else if (filterType === 'monthly') {
+                return matchesYear && matchesMonth;
+            } else if (filterType === 'yearly') {
+                return matchesYear;
+            }
+            return true;
+        });
+    
+        const tbody = document.getElementById('history-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+    
+        if (filteredHistory.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Tidak ada data riwayat untuk periode ini.</td></tr>`;
+            return;
+        }
+    
+        let totalRevenue = 0;
+        let totalProfit = 0;
+        let totalCount = 0;
+        let totalItems = 0;
+    
+        filteredHistory.forEach(item => {
+            if (item.recordType === 'TRANSACTION') {
+                totalRevenue += (item.total || 0);
+                totalProfit += (item.profit || 0);
+                totalCount += 1;
+                if (item.items) item.items.forEach(i => totalItems += (i.qty || 0));
+            }
+    
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-gray-50 transition";
+    
+            if (item.recordType === 'SESSION') {
+                const isClose = item.type === 'CLOSE_SESSION';
+                tr.className = isClose ? "bg-purple-50/60 hover:bg-purple-50" : "bg-blue-50/60 hover:bg-blue-50";
+                
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-xs ${isClose ? 'text-purple-800' : 'text-blue-800'}">
+                        <i class="fas ${isClose ? 'fa-lock' : 'fa-door-open'} mr-1"></i> ${item.id}
+                    </td>
+                    <td class="p-3 text-xs">${new Date(item.timestamp).toLocaleString('id-ID')}</td>
+                    <td class="p-3 font-medium text-xs text-gray-700">${item.itemsSummary}</td>
+                    <td class="p-3 text-right font-bold text-xs">-</td>
+                    <td class="p-3 text-right text-xs font-semibold ${isClose && item.difference < 0 ? 'text-red-600' : 'text-emerald-700'}">
+                        ${isClose ? 'Aktual: Rp ' + item.actualCash.toLocaleString('id-ID') : 'Modal: Rp ' + item.startCash.toLocaleString('id-ID')}
+                    </td>
+                    <td class="p-3 text-center text-xs">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isClose ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">
+                            ${isClose ? 'TUTUP SESI' : 'BUKA SESI'}
+                        </span>
+                    </td>
+                `;
+            } else {
+                tr.innerHTML = `
+                    <td class="p-3 font-medium text-xs text-gray-800">${item.id}</td>
+                    <td class="p-3 text-xs">${new Date(item.timestamp).toLocaleString('id-ID')}</td>
+                    <td class="p-3 text-xs">${item.items ? item.items.map(i => `${i.name} (${i.qty})`).join(', ') : '-'}</td>
+                    <td class="p-3 text-right font-bold text-xs text-amber-800">Rp ${(item.total || 0).toLocaleString('id-ID')}</td>
+                    <td class="p-3 text-right text-xs text-emerald-700 font-semibold">Rp ${(item.profit || 0).toLocaleString('id-ID')}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="viewReceipt('${item.id}')" class="text-amber-700 hover:text-amber-900 mr-2" title="Cetak Ulang"><i class="fas fa-print"></i></button>
+                        <button onclick="promptDeleteTransaction('${item.id}')" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+            }
+            tbody.appendChild(tr);
+        });
+    
+        if (document.getElementById('stat-monthly-revenue')) document.getElementById('stat-monthly-revenue').innerText = 'Rp ' + totalRevenue.toLocaleString('id-ID');
+        if (document.getElementById('stat-monthly-profit')) document.getElementById('stat-monthly-profit').innerText = 'Rp ' + totalProfit.toLocaleString('id-ID');
+        if (document.getElementById('stat-monthly-count')) document.getElementById('stat-monthly-count').innerText = totalCount + ' TRX';
+        if (document.getElementById('stat-monthly-items')) document.getElementById('stat-monthly-items').innerText = totalItems + ' Item';
     }
   </script>
 </body>
