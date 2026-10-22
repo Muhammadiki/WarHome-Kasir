@@ -1119,48 +1119,101 @@
    // }
 
     function renderHistory() {
-  const selectedDate = document.getElementById('filter-date').value; // format YYYY-MM-DD
-  const selectedMonth = document.getElementById('filter-month').value;
-  const selectedYear = document.getElementById('filter-year').value;
-
-  // Filter array transaksi (asumsi nama array data transaksi adalah 'transactions')
-  const filteredTransactions = transactions.filter(trx => {
-    const trxDate = new Date(trx.timestamp || trx.date);
+      const selectedDate = document.getElementById('filter-date').value; // format YYYY-MM-DD
+      const selectedMonth = document.getElementById('filter-month').value;
+      const selectedYear = document.getElementById('filter-year').value;
     
-    // 1. Filter spesifik hari/tanggal
-    if (selectedDate) {
-      const year = trxDate.getFullYear();
-      const month = String(trxDate.getMonth() + 1).padStart(2, '0');
-      const day = String(trxDate.getDate()).padStart(2, '0');
-      const formattedTrxDate = `${year}-${month}-${day}`;
+      // Filter array transaksi (asumsi nama array data transaksi adalah 'transactions')
+      const filteredTransactions = transactions.filter(trx => {
+        const trxDate = new Date(trx.timestamp || trx.date);
+        
+        // 1. Filter spesifik hari/tanggal
+        if (selectedDate) {
+          const year = trxDate.getFullYear();
+          const month = String(trxDate.getMonth() + 1).padStart(2, '0');
+          const day = String(trxDate.getDate()).padStart(2, '0');
+          const formattedTrxDate = `${year}-${month}-${day}`;
+          
+          if (formattedTrxDate !== selectedDate) return false;
+        }
+    
+        // 2. Filter Bulan
+        if (selectedMonth !== 'all') {
+          if (trxDate.getMonth() !== parseInt(selectedMonth)) return false;
+        }
+    
+        // 3. Filter Tahun
+        if (selectedYear !== 'all') {
+          if (trxDate.getFullYear() !== parseInt(selectedYear)) return false;
+        }
+    
+        return true;
+      });
+
+      // Tampilkan data hasil filter ke tabel dan perbarui rekap statistik
+      updateHistoryTableAndStats(filteredTransactions);
+    }
+
+    function updateHistoryTableAndStats(filteredTransactions) {
+      const tableBody = document.getElementById('history-table-body'); // Sesuaikan dengan ID tbody tabel riwayat Anda
+      if (!tableBody) return;
+    
+      tableBody.innerHTML = '';
       
-      if (formattedTrxDate !== selectedDate) return false;
+      let totalOmset = 0;
+      let totalTransaksi = filteredTransactions.length;
+    
+      if (totalTransaksi === 0) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">Tidak ada riwayat transaksi</td></tr>`;
+        return;
+      }
+    
+      filteredTransactions.forEach(trx => {
+        totalOmset += Number(trx.total || 0);
+        
+        // Format tanggal sesuai kebutuhan
+        const dateObj = new Date(trx.timestamp || trx.date);
+        const dateStr = dateObj.toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+    
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="py-2 px-3 text-sm">${trx.id || '-'}</td>
+          <td class="py-2 px-3 text-sm">${dateStr}</td>
+          <td class="py-2 px-3 text-sm">Rp ${(Number(trx.total) || 0).toLocaleString('id-ID')}</td>
+          <td class="py-2 px-3 text-sm">${trx.paymentMethod || 'Tunai'}</td>
+          <td class="py-2 px-3 text-sm text-center">
+            <button onclick="viewTransactionDetail('${trx.id}')" class="text-amber-700 hover:text-amber-900 font-semibold text-xs bg-amber-50 px-2 py-1 rounded">Detail</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    
+      // Jika Anda memiliki elemen untuk menampilkan rekap total omset/transaksi
+      const elTotalOmset = document.getElementById('history-total-omset');
+      if (elTotalOmset) {
+        elTotalOmset.innerText = `Rp ${totalOmset.toLocaleString('id-ID')}`;
+      }
+    
+      const elTotalCount = document.getElementById('history-total-count');
+      if (elTotalCount) {
+        elTotalCount.innerText = totalTransaksi;
+      }
     }
 
-    // 2. Filter Bulan
-    if (selectedMonth !== 'all') {
-      if (trxDate.getMonth() !== parseInt(selectedMonth)) return false;
+    // Fungsi pendukung untuk me-reset semua input filter
+    function resetHistoryFilter() {
+      document.getElementById('filter-date').value = '';
+      document.getElementById('filter-month').value = 'all';
+      document.getElementById('filter-year').value = 'all';
+      renderHistory();
     }
-
-    // 3. Filter Tahun
-    if (selectedYear !== 'all') {
-      if (trxDate.getFullYear() !== parseInt(selectedYear)) return false;
-    }
-
-    return true;
-  });
-
-  // Tampilkan data hasil filter ke tabel dan perbarui rekap statistik
-  updateHistoryTableAndStats(filteredTransactions);
-}
-
-// Fungsi pendukung untuk me-reset semua input filter
-function resetHistoryFilter() {
-  document.getElementById('filter-date').value = '';
-  document.getElementById('filter-month').value = 'all';
-  document.getElementById('filter-year').value = 'all';
-  renderHistory();
-}
 
     function requestDeleteTransaction(trxId) {
       targetDeleteTrxId = trxId;
