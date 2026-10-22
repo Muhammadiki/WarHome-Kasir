@@ -1207,6 +1207,40 @@
       }
     }
 
+    function switchTab(tabId) {
+      // Sembunyikan semua view
+      const views = ['pos', 'history', 'products'];
+      views.forEach(v => {
+        const viewEl = document.getElementById(`view-${v}`);
+        if (viewEl) {
+          if (v === tabId) {
+            viewEl.classList.remove('hidden');
+          } else {
+            viewEl.classList.add('hidden');
+          }
+        }
+      });
+    
+      // Perbarui status aktif pada tombol tab navigasi
+      views.forEach(v => {
+        const tabEl = document.getElementById(`tab-${v}`);
+        if (tabEl) {
+          if (v === tabId) {
+            tabEl.classList.add('bg-amber-950', 'text-amber-100');
+            tabEl.classList.remove('hover:bg-amber-700');
+          } else {
+            tabEl.classList.remove('bg-amber-950', 'text-amber-100');
+            tabEl.classList.add('hover:bg-amber-700');
+          }
+        }
+      });
+    
+      // Jika pindah ke tab riwayat, panggil renderHistory
+      if (tabId === 'history' && typeof renderHistory === 'function') {
+        renderHistory();
+      }
+    }
+
     // Fungsi pendukung untuk me-reset semua input filter
     function resetHistoryFilter() {
       document.getElementById('filter-date').value = '';
