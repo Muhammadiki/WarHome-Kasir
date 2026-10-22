@@ -111,7 +111,47 @@
     </div>
 
     <!-- TAB 2: RIWAYAT & GRAFIK (PROFIT & LOSS ADDED) -->
-    <div id="view-history" class="hidden space-y-6">
+    <!--<div id="view-history" class="hidden space-y-6"> -->
+    <div class="flex flex-wrap items-center gap-2">
+        <!-- Filter Tanggal/Hari -->
+        <input 
+          type="date" 
+          id="filter-date" 
+          onchange="renderHistory()" 
+          class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+        />
+      
+        <!-- Filter Bulan -->
+        <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
+          <option value="all">Semua Bulan</option>
+          <option value="0">Januari</option>
+          <option value="1">Februari</option>
+          <option value="2">Maret</option>
+          <option value="3">April</option>
+          <option value="4">Mei</option>
+          <option value="5">Juni</option>
+          <option value="6">Juli</option>
+          <option value="7">Agustus</option>
+          <option value="8">September</option>
+          <option value="9">Oktober</option>
+          <option value="10">November</option>
+          <option value="11">Desember</option>
+        </select>
+      
+        <!-- Filter Tahun -->
+        <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
+          <option value="all">Semua Tahun</option>
+        </select>
+      
+        <!-- Tombol Reset Filter -->
+        <button onclick="resetHistoryFilter()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs px-3 py-2 rounded-lg font-semibold transition">
+          <i class="fas fa-undo mr-1"></i> Reset Filter
+        </button>
+      
+        <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
+          <i class="fas fa-print mr-1.5"></i> Cetak Laporan
+        </button>
+      </div>
       
       <!-- CARD GRAFIK LENGKAP DENGAN TOGGLE MODE -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
@@ -984,99 +1024,143 @@
       }
     }
 
-    function renderHistory() {
+    //function renderHistory() {
       // 1. Ambil elemen filter dari HTML (pastikan ID elemen sesuai dengan HTML Anda)
-      const filterTypeEl = document.getElementById('filter-type'); // Opsional: jika ada pilihan harian/bulanan
-      const filterDateEl = document.getElementById('filter-date-input'); // Input type="date" untuk harian
-      const monthFilterEl = document.getElementById('filter-month'); // Select bulan
-      const yearFilterEl = document.getElementById('filter-year'); // Select tahun
+      //const filterTypeEl = document.getElementById('filter-type'); // Opsional: jika ada pilihan harian/bulanan
+      //const filterDateEl = document.getElementById('filter-date-input'); // Input type="date" untuk harian
+     // const monthFilterEl = document.getElementById('filter-month'); // Select bulan
+    //  const yearFilterEl = document.getElementById('filter-year'); // Select tahun
 
-      const filterType = filterTypeEl ? filterTypeEl.value : 'monthly'; // 'daily' atau 'monthly'
-      const selectedDate = filterDateEl ? filterDateEl.value : ''; // Format: YYYY-MM-DD
-      const monthFilter = monthFilterEl ? monthFilterEl.value : 'all';
-      const yearFilter = yearFilterEl ? parseInt(yearFilterEl.value) : new Date().getFullYear();
+     // const filterType = filterTypeEl ? filterTypeEl.value : 'monthly'; // 'daily' atau 'monthly'
+     // const selectedDate = filterDateEl ? filterDateEl.value : ''; // Format: YYYY-MM-DD
+    //  const monthFilter = monthFilterEl ? monthFilterEl.value : 'all';
+     // const yearFilter = yearFilterEl ? parseInt(yearFilterEl.value) : new Date().getFullYear();
 
       // Pastikan variabel 'transactions' tersedia (ambil dari localStorage jika kosong)
-      const allTransactions = (typeof transactions !== 'undefined' && Array.isArray(transactions)) 
-        ? transactions 
-        : (JSON.parse(localStorage.getItem('warhome_transactions')) || []);
+     // const allTransactions = (typeof transactions !== 'undefined' && Array.isArray(transactions)) 
+      //  ? transactions 
+       // : (JSON.parse(localStorage.getItem('warhome_transactions')) || []);
 
       // 2. Filter transaksi berdasarkan tanggal / bulan & tahun
-      const filtered = allTransactions.filter(t => {
-        const rawDate = t.timestamp || t.date;
-        if (!rawDate) return false;
+     // const filtered = allTransactions.filter(t => {
+      //  const rawDate = t.timestamp || t.date;
+      //  if (!rawDate) return false;
 
-        const d = new Date(rawDate);
-        if (isNaN(d.getTime())) return false;
+      //  const d = new Date(rawDate);
+      //  if (isNaN(d.getTime())) return false;
 
         // Jika menggunakan filter harian (berdasarkan tanggal spesifik)
-        if (filterType === 'daily' && selectedDate) {
-          const trxDateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
-          return trxDateStr === selectedDate;
-        }
+       // if (filterType === 'daily' && selectedDate) {
+       //   const trxDateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+       //   return trxDateStr === selectedDate;
+       // }
 
         // Jika menggunakan filter bulanan & tahunan
-        const matchYear = d.getFullYear() === yearFilter;
-        const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
-        return matchYear && matchMonth;
-      });
+      //  const matchYear = d.getFullYear() === yearFilter;
+      //  const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
+      //  return matchYear && matchMonth;
+     // });
 
       // 3. Hitung ringkasan statistik
-      const totalRev = filtered.reduce((s, t) => s + (t.total || t.subtotal || 0), 0);
+     // const totalRev = filtered.reduce((s, t) => s + (t.total || t.subtotal || 0), 0);
       
       // Hitung total profit akurat dari akumulasi item (fallback ke perkiraan jika properti profit tidak ada)
-      const totalProfit = filtered.reduce((s, t) => {
-        if (t.profit !== undefined) return s + t.profit;
-        if (t.items) {
-          return s + t.items.reduce((is, i) => is + ((i.price - (i.hpp || 0)) * i.qty), 0);
-        }
-        return s + Math.round((t.total || 0) * 0.3); // Default 30% jika data hpp kosong
-      }, 0);
+     // const totalProfit = filtered.reduce((s, t) => {
+      //  if (t.profit !== undefined) return s + t.profit;
+      //  if (t.items) {
+     //     return s + t.items.reduce((is, i) => is + ((i.price - (i.hpp || 0)) * i.qty), 0);
+       // }
+       // return s + Math.round((t.total || 0) * 0.3); // Default 30% jika data hpp kosong
+     // }, 0);
 
-      const totalItems = filtered.reduce((s, t) => s + (t.items ? t.items.reduce((is, i) => is + i.qty, 0) : 0), 0);
+     // const totalItems = filtered.reduce((s, t) => s + (t.items ? t.items.reduce((is, i) => is + i.qty, 0) : 0), 0);
 
       // 4. Update elemen statistik di UI (jika elemennya ada)
-      if (document.getElementById('stat-monthly-revenue')) document.getElementById('stat-monthly-revenue').innerText = formatRp(totalRev);
-      if (document.getElementById('stat-monthly-profit')) document.getElementById('stat-monthly-profit').innerText = formatRp(totalProfit);
-      if (document.getElementById('stat-monthly-count')) document.getElementById('stat-monthly-count').innerText = `${filtered.length} TRX`;
-      if (document.getElementById('stat-monthly-items')) document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
+    //  if (document.getElementById('stat-monthly-revenue')) document.getElementById('stat-monthly-revenue').innerText = formatRp(totalRev);
+     // if (document.getElementById('stat-monthly-profit')) document.getElementById('stat-monthly-profit').innerText = formatRp(totalProfit);
+     // if (document.getElementById('stat-monthly-count')) document.getElementById('stat-monthly-count').innerText = `${filtered.length} TRX`;
+     // if (document.getElementById('stat-monthly-items')) document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
 
       // 5. Render ke dalam tabel riwayat
-      const tbody = document.getElementById('history-table-body');
-      if (!tbody) return;
+     // const tbody = document.getElementById('history-table-body');
+     // if (!tbody) return;
 
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-400 text-xs">Tidak ada riwayat transaksi pada periode ini.</td></tr>`;
-        return;
-      }
+    //  if (filtered.length === 0) {
+      //  tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-400 text-xs">Tidak ada riwayat transaksi pada periode ini.</td></tr>`;
+      //  return;
+     // }
 
-      tbody.innerHTML = filtered.map(t => {
-        const rawDate = t.timestamp || t.date;
-        const d = new Date(rawDate);
-        const formattedDate = !isNaN(d.getTime()) ? d.toLocaleString('id-ID') : '-';
+     // tbody.innerHTML = filtered.map(t => {
+      //  const rawDate = t.timestamp || t.date;
+      //  const d = new Date(rawDate);
+      //  const formattedDate = !isNaN(d.getTime()) ? d.toLocaleString('id-ID') : '-';
         
         // Hitung profit per transaksi
-        const estProfit = t.profit !== undefined ? t.profit : (t.items ? t.items.reduce((is, i) => is + ((i.price - (i.hpp || 0)) * i.qty), 0) : Math.round((t.total || 0) * 0.3));
+      //  const estProfit = t.profit !== undefined ? t.profit : (t.items ? t.items.reduce((is, i) => is + ((i.price - (i.hpp || 0)) * i.qty), 0) : Math.round((t.total || 0) * 0.3));
 
-        return `
-          <tr class="hover:bg-gray-50 border-b">
-            <td class="p-3 font-bold text-xs">${t.id}</td>
-            <td class="p-3 text-xs">${formattedDate}</td>
-            <td class="p-3 text-xs">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
-            <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.total || t.subtotal || 0)}</td>
-            <td class="p-3 text-right font-bold text-xs text-emerald-700">${formatRp(estProfit)}</td>
-            <td class="p-3 text-center space-x-2">
-              <button onclick='showReceiptModal(${JSON.stringify(t).replace(/"/g, '&quot;')})' class="text-amber-700 hover:text-amber-900 text-xs font-semibold">
-                <i class="fas fa-print mr-1"></i> Cetak
-              </button>
-              <button onclick="requestDeleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs font-semibold">
-                <i class="fas fa-trash-alt mr-1"></i> Hapus
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+       // return `
+       //   <tr class="hover:bg-gray-50 border-b">
+       //     <td class="p-3 font-bold text-xs">${t.id}</td>
+       //     <td class="p-3 text-xs">${formattedDate}</td>
+       //     <td class="p-3 text-xs">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
+       //     <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.total || t.subtotal || 0)}</td>
+       //     <td class="p-3 text-right font-bold text-xs text-emerald-700">${formatRp(estProfit)}</td>
+       //     <td class="p-3 text-center space-x-2">
+        //      <button onclick='showReceiptModal(${JSON.stringify(t).replace(/"/g, '&quot;')})' class="text-amber-700 hover:text-amber-900 text-xs font-semibold">
+         //       <i class="fas fa-print mr-1"></i> Cetak
+         //     </button>
+         //    <button onclick="requestDeleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs font-semibold">
+          //      <i class="fas fa-trash-alt mr-1"></i> Hapus
+          //    </button>
+          //  </td>
+        //  </tr>
+      //  `;
+    //  }).join('');
+   // }
+
+    function renderHistory() {
+  const selectedDate = document.getElementById('filter-date').value; // format YYYY-MM-DD
+  const selectedMonth = document.getElementById('filter-month').value;
+  const selectedYear = document.getElementById('filter-year').value;
+
+  // Filter array transaksi (asumsi nama array data transaksi adalah 'transactions')
+  const filteredTransactions = transactions.filter(trx => {
+    const trxDate = new Date(trx.timestamp || trx.date);
+    
+    // 1. Filter spesifik hari/tanggal
+    if (selectedDate) {
+      const year = trxDate.getFullYear();
+      const month = String(trxDate.getMonth() + 1).padStart(2, '0');
+      const day = String(trxDate.getDate()).padStart(2, '0');
+      const formattedTrxDate = `${year}-${month}-${day}`;
+      
+      if (formattedTrxDate !== selectedDate) return false;
     }
+
+    // 2. Filter Bulan
+    if (selectedMonth !== 'all') {
+      if (trxDate.getMonth() !== parseInt(selectedMonth)) return false;
+    }
+
+    // 3. Filter Tahun
+    if (selectedYear !== 'all') {
+      if (trxDate.getFullYear() !== parseInt(selectedYear)) return false;
+    }
+
+    return true;
+  });
+
+  // Tampilkan data hasil filter ke tabel dan perbarui rekap statistik
+  updateHistoryTableAndStats(filteredTransactions);
+}
+
+// Fungsi pendukung untuk me-reset semua input filter
+function resetHistoryFilter() {
+  document.getElementById('filter-date').value = '';
+  document.getElementById('filter-month').value = 'all';
+  document.getElementById('filter-year').value = 'all';
+  renderHistory();
+}
 
     function requestDeleteTransaction(trxId) {
       targetDeleteTrxId = trxId;
