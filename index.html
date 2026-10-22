@@ -1343,6 +1343,34 @@
     }
     
     function renderHistory() {
+        // Jika menggunakan Firebase, ambil data dari database cloud, fallback ke localStorage jika offline
+        if (typeof useFirebase !== 'undefined' && useFirebase && typeof db !== 'undefined' && db) {
+            // Ambil data transaksi dari Firebase
+            db.ref('transactions').once('value').then(snapshotTrx => {
+                const cloudTrx = [];
+                snapshotTrx.forEach(child => {
+                    cloudTrx.push({ ...child.val(), recordType: 'TRANSACTION' });
+                });
+    
+                // Ambil data sesi dari Firebase
+                db.ref('sessions').once('value').then(snapshotSes => {
+                    const cloudSes = [];
+                    snapshotSes.forEach(child => {
+                        cloudSes.push({ ...child.val(), recordType: 'SESSION' });
+                    });
+    
+                    processAndRenderHistoryData([...cloudTrx, ...cloudSes]);
+                });
+            }).catch(err => {
+                console.error("Gagal ambil riwayat dari Firebase, beralih ke lokal:", err);
+                renderHistoryFromLocal();
+            });
+        } else {
+            renderHistoryFromLocal();
+        }
+    }
+    
+    function renderHistoryFromLocal() {
         const transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
         const sessionHistory = JSON.parse(localStorage.getItem('warhome_session_history')) || [];
         
@@ -1351,6 +1379,10 @@
             ...sessionHistory.map(s => ({ ...s, recordType: 'SESSION' }))
         ];
     
+        processAndRenderHistoryData(combinedHistory);
+    }
+    
+    function processAndRenderHistoryData(combinedHistory) {
         combinedHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
         const filterType = document.getElementById('filter-type') ? document.getElementById('filter-type').value : 'monthly';
@@ -1411,10 +1443,10 @@
                         <i class="fas ${isClose ? 'fa-lock' : 'fa-door-open'} mr-1"></i> ${item.id}
                     </td>
                     <td class="p-3 text-xs">${new Date(item.timestamp).toLocaleString('id-ID')}</td>
-                    <td class="p-3 font-medium text-xs text-gray-700">${item.itemsSummary}</td>
+                    <td class="p-3 font-medium text-xs text-gray-700">${item.itemsSummary || '-'}</td>
                     <td class="p-3 text-right font-bold text-xs">-</td>
                     <td class="p-3 text-right text-xs font-semibold ${isClose && item.difference < 0 ? 'text-red-600' : 'text-emerald-700'}">
-                        ${isClose ? 'Aktual: Rp ' + item.actualCash.toLocaleString('id-ID') : 'Modal: Rp ' + item.startCash.toLocaleString('id-ID')}
+                        ${isClose ? 'Aktual: Rp ' + (item.actualCash || 0).toLocaleString('id-ID') : 'Modal: Rp ' + (item.startCash || 0).toLocaleString('id-ID')}
                     </td>
                     <td class="p-3 text-center text-xs">
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isClose ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">
