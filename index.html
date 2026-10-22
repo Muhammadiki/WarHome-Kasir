@@ -1346,169 +1346,35 @@
     if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
         const dbRef = firebase.database();
         
-        Promise.all([
-            dbRef.ref('transactions').once('value'),
-            dbRef.ref('sessions').once('value')
-        ]).then(([snapshotTrx, snapshotSes]) => {
+        dbRef.ref('transactions').once('value').then(snapshot => {
+            console.log("Data transaksi dari Firebase:", snapshot.val());
             const cloudTrx = [];
-            
-            // Pemindaian mendalam untuk mengekstrak transaksi dari berbagai format struktur Firebase
-            snapshotTrx.once('value', () => {}); // pastikan koneksi sinkron
-            const rawTrxData = snapshotTrx.val();
-            
-            if (rawTrxData) {
-                // Cek apakah data berupa array atau objek bertingkat
-                Object.keys(rawTrxData).forEach(key => {
-                    const item = rawTrxData[key];
-                    if (item) {
-                        // Jika item memiliki timestamp langsung (format datar)
-                        if (item.timestamp) {
-                            cloudTrx.push({ ...item, recordType: 'TRANSACTION', id: item.id || key });
-                        } else {
-                            // Jika item berupa objek bertingkat di dalam sesi/folder
-                            Object.keys(item).forEach(subKey => {
-                                const subItem = item[subKey];
-                                if (subItem && subItem.timestamp) {
-                                    cloudTrx.push({ ...subItem, recordType: 'TRANSACTION', id: subItem.id || subKey });
-                                }
-                            });
-                        }
-                    }
-                });
-            }
+            snapshot.forEach(childSnap => {
+                const val = childSnap.val();
+                if (val) cloudTrx.push({ ...val, recordType: 'TRANSACTION', id: val.id || childSnap.key });
+            });
 
-            const cloudSes = [];
-            const rawSesData = snapshotSes.val();
-            if (rawSesData) {
-                Object.keys(rawSesData).forEach(key => {
-                    const item = rawSesData[key];
-                    if (item) {
-                        cloudSes.push({ ...item, recordType: 'SESSION', id: item.id || key });
-                    }
+            dbRef.ref('sessions').once('value').then(snapshotSes => {
+                const cloudSes = [];
+                snapshotSes.forEach(childSnap => {
+                    const val = childSnap.val();
+                    if (val) cloudSes.push({ ...val, recordType: 'SESSION', id: val.id || childSnap.key });
                 });
-            }
 
-            const combinedHistory = [...cloudTrx, ...cloudSes];
-            
-            if (combinedHistory.length === 0) {
-                renderHistoryFromLocal();
-            } else {
-                processAndRenderHistoryData(combinedHistory);
-            }
+                const combinedHistory = [...cloudTrx, ...cloudSes];
+                if (combinedHistory.length === 0) {
+                    renderHistoryFromLocal();
+                } else {
+                    processAndRenderHistoryData(combinedHistory);
+                }
+            });
         }).catch(err => {
-            console.error("Gagal sinkronisasi dari Firebase:", err);
+            console.error("Gagal ambil dari Firebase:", err);
             renderHistoryFromLocal();
         });
     } else {
         renderHistoryFromLocal();
     }
-}
-
-function renderHistoryFromLocal() {
-    const transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
-    const sessionHistory = JSON.parse(localStorage.getItem('warhome_session_history')) || [];
-    
-    const combinedHistory = [
-        ...transactions.map(t => ({ ...t, recordType: 'TRANSACTION' })),
-        ...sessionHistory.map(s => ({ ...s, recordType: 'SESSION' }))
-    ];
-
-    processAndRenderHistoryData(combinedHistory);
-}
-
-function processAndRenderHistoryData(combinedHistory) {
-    combinedHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-    const filterType = document.getElementById('filter-type') ? document.getElementById('filter-type').value : 'monthly';
-    const selectedDate = document.getElementById('filter-date') ? document.getElementById('filter-date').value : '';
-    const selectedMonth = document.getElementById('filter-month') ? document.getElementById('filter-month').value : 'all';
-    const selectedYear = document.getElementById('filter-year') ? document.getElementById('filter-year').value : 'all';
-
-    const filteredHistory = combinedHistory.filter(item => {
-        if (!item.timestamp) return false;
-        const itemDate = new Date(item.timestamp);
-        const itemYear = itemDate.getFullYear().toString();
-        const itemMonth = itemDate.getMonth().toString();
-        const itemDateStr = itemDate.toISOString().split('T')[0];
-
-        const matchesYear = selectedYear === 'all' || itemYear === selectedYear;
-        const matchesMonth = selectedMonth === 'all' || itemMonth === selectedMonth;
-
-        if (filterType === 'daily') {
-            return selectedDate ? itemDateStr === selectedDate : true;
-        } else if (filterType === 'monthly') {
-            return matchesYear && matchesMonth;
-        } else if (filterType === 'yearly') {
-            return matchesYear;
-        }
-        return true;
-    });
-
-    const tbody = document.getElementById('history-table-body');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    if (filteredHistory.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Tidak ada data riwayat untuk periode ini.</td></tr>`;
-        return;
-    }
-
-    let totalRevenue = 0;
-    let totalProfit = 0;
-    let totalCount = 0;
-    let totalItems = 0;
-
-    filteredHistory.forEach(item => {
-        if (item.recordType === 'TRANSACTION') {
-            totalRevenue += (item.total || 0);
-            totalProfit += (item.profit || 0);
-            totalCount += 1;
-            if (item.items) item.items.forEach(i => totalItems += (i.qty || 0));
-        }
-
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-gray-50 transition";
-
-        if (item.recordType === 'SESSION') {
-            const isClose = item.type === 'CLOSE_SESSION';
-            tr.className = isClose ? "bg-purple-50/60 hover:bg-purple-50" : "bg-blue-50/60 hover:bg-blue-50";
-            
-            tr.innerHTML = `
-                <td class="p-3 font-bold text-xs ${isClose ? 'text-purple-800' : 'text-blue-800'}">
-                    <i class="fas ${isClose ? 'fa-lock' : 'fa-door-open'} mr-1"></i> ${item.id || 'SESI'}
-                </td>
-                <td class="p-3 text-xs">${item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID') : '-'}</td>
-                <td class="p-3 font-medium text-xs text-gray-700">${item.itemsSummary || '-'}</td>
-                <td class="p-3 text-right font-bold text-xs">-</td>
-                <td class="p-3 text-right text-xs font-semibold ${isClose && item.difference < 0 ? 'text-red-600' : 'text-emerald-700'}">
-                    ${isClose ? 'Aktual: Rp ' + (item.actualCash || 0).toLocaleString('id-ID') : 'Modal: Rp ' + (item.startCash || 0).toLocaleString('id-ID')}
-                </td>
-                <td class="p-3 text-center text-xs">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isClose ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">
-                        ${isClose ? 'TUTUP SESI' : 'BUKA SESI'}
-                    </span>
-                </td>
-            `;
-        } else {
-            tr.innerHTML = `
-                <td class="p-3 font-medium text-xs text-gray-800">${item.id || '-'}</td>
-                <td class="p-3 text-xs">${item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID') : '-'}</td>
-                <td class="p-3 text-xs">${item.items ? item.items.map(i => `${i.name} (${i.qty})`).join(', ') : '-'}</td>
-                <td class="p-3 text-right font-bold text-xs text-amber-800">Rp ${(item.total || 0).toLocaleString('id-ID')}</td>
-                <td class="p-3 text-right text-xs text-emerald-700 font-semibold">Rp ${(item.profit || 0).toLocaleString('id-ID')}</td>
-                <td class="p-3 text-center">
-                    <button onclick="viewReceipt('${item.id}')" class="text-amber-700 hover:text-amber-900 mr-2" title="Cetak Ulang"><i class="fas fa-print"></i></button>
-                    <button onclick="promptDeleteTransaction('${item.id}')" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></button>
-                </td>
-            `;
-        }
-        tbody.appendChild(tr);
-    });
-
-    if (document.getElementById('stat-monthly-revenue')) document.getElementById('stat-monthly-revenue').innerText = 'Rp ' + totalRevenue.toLocaleString('id-ID');
-    if (document.getElementById('stat-monthly-profit')) document.getElementById('stat-monthly-profit').innerText = 'Rp ' + totalProfit.toLocaleString('id-ID');
-    if (document.getElementById('stat-monthly-count')) document.getElementById('stat-monthly-count').innerText = totalCount + ' TRX';
-    if (document.getElementById('stat-monthly-items')) document.getElementById('stat-monthly-items').innerText = totalItems + ' Item';
 }
 
     // Panggil renderHistory otomatis saat halaman selesai dimuat
