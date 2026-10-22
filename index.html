@@ -1497,6 +1497,17 @@ function processAndRenderHistoryData(combinedHistory) {
     document.addEventListener("DOMContentLoaded", function() {
         renderHistory();
     });
+
+    function updateBadge(status, text) {
+    const badge = document.getElementById('cloud-badge');
+    if (!badge) return;
+    badge.innerText = text;
+    if (status === 'online') {
+        badge.className = "bg-emerald-950 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
+    } else {
+        badge.className = "bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
+    }
+}
   </script>
 </body>
 </html>
