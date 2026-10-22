@@ -113,53 +113,7 @@
     <!-- TAB 2: RIWAYAT & GRAFIK (PROFIT & LOSS ADDED) -->
     <div id="view-history" class="hidden space-y-6">
       
-      <!-- 1. CARD BARIS FILTER UTAMA (Hari, Bulan, Tahun) -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex items-center gap-2">
-            <label class="text-xs font-semibold text-gray-600">Tanggal:</label>
-            <input type="date" id="filter-date" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 focus:ring-2 focus:ring-amber-500 focus:outline-none" />
-          </div>
-          
-          <div class="flex items-center gap-2">
-            <label class="text-xs font-semibold text-gray-600">Bulan:</label>
-            <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
-              <option value="all">Semua Bulan</option>
-              <option value="0">Januari</option>
-              <option value="1">Februari</option>
-              <option value="2">Maret</option>
-              <option value="3">April</option>
-              <option value="4">Mei</option>
-              <option value="5">Juni</option>
-              <option value="6">Juli</option>
-              <option value="7">Agustus</option>
-              <option value="8">September</option>
-              <option value="9">Oktober</option>
-              <option value="10">November</option>
-              <option value="11">Desember</option>
-            </select>
-          </div>
-    
-          <div class="flex items-center gap-2">
-            <label class="text-xs font-semibold text-gray-600">Tahun:</label>
-            <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
-              <option value="all">Semua Tahun</option>
-            </select>
-          </div>
-    
-          <!-- Tombol Aksi Filter & Cetak -->
-          <div class="flex items-center gap-2 ml-auto">
-            <button onclick="resetHistoryFilter()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs px-3 py-2 rounded-lg font-semibold transition">
-              <i class="fas fa-undo mr-1"></i> Reset Filter
-            </button>
-            <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
-              <i class="fas fa-print mr-1.5"></i> Cetak Laporan
-            </button>
-          </div>
-        </div>
-      </div> 
-    
-      <!-- 2. CARD GRAFIK ANALISIS -->
+      <!-- CARD GRAFIK LENGKAP DENGAN TOGGLE MODE -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b pb-3">
           <div>
@@ -168,13 +122,15 @@
             </h2>
             <p class="text-xs text-gray-500">Visualisasi omset pendapatan dan estimasi laba/rugi Warhome</p>
           </div>
+          
           <div class="flex flex-wrap gap-2 items-center">
-            <!-- TOGGLE METRIK GRAFIK -->
+            <!-- TOGGLE METRIK GRAFIK (OMSET / LABA / LABA RUGI) -->
             <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold">
               <button onclick="setChartMetric('revenue')" id="metric-btn-revenue" class="px-2.5 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold">Omset</button>
               <button onclick="setChartMetric('profit')" id="metric-btn-profit" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Laba Bersih</button>
               <button onclick="setChartMetric('pnl')" id="metric-btn-pnl" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Laba Rugi (P&L)</button>
             </div>
+
             <!-- TOGGLE PERIODE WAKTU -->
             <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold">
               <button onclick="updateChartPeriod('daily')" id="chart-btn-daily" class="px-2.5 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold">Harian</button>
@@ -184,45 +140,49 @@
             </div>
           </div>
         </div>
+
         <div class="relative h-64 sm:h-80 w-full"><canvas id="salesChart"></canvas></div>
       </div>
-    
-      <!-- 3. CARD REKAP RINGKASAN OMSET & TABEL RIWAYAT -->
+
+      <!-- CARD REKAP RINGKASAN OMSET & LABA -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
           <div>
             <h2 class="font-bold text-lg text-gray-800 flex items-center"><i class="fas fa-history text-amber-700 mr-2"></i> Riwayat Transaksi</h2>
-            <p class="text-xs text-gray-500">Rekap transaksi, cetak ulang resi, dan kelola data</p>
+            <p class="text-xs text-gray-500">Rekap bulanan, cetak ulang resi, dan kelola data</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
+              <option value="all">Semua Bulan</option>
+              <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
+              <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
+              <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
+              <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
+            </select>
+            <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
+            <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
+              <i class="fas fa-print mr-1.5"></i> Cetak Laporan
+            </button>
           </div>
         </div>
-        
-        <!-- Statistik Kartu Ringkasan -->
+
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div class="bg-amber-50 border border-amber-200 p-3.5 rounded-lg"><span class="text-[11px] text-amber-800 font-semibold block">Total Omset</span><span id="stat-monthly-revenue" class="text-lg font-bold text-amber-900">Rp 0</span></div>
           <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-lg"><span class="text-[11px] text-emerald-800 font-semibold block">Est. Laba Bersih</span><span id="stat-monthly-profit" class="text-lg font-bold text-emerald-900">Rp 0</span></div>
           <div class="bg-blue-50 border border-blue-200 p-3.5 rounded-lg"><span class="text-[11px] text-blue-800 font-semibold block">Total Transaksi</span><span id="stat-monthly-count" class="text-lg font-bold text-blue-900">0 TRX</span></div>
           <div class="bg-purple-50 border border-purple-200 p-3.5 rounded-lg"><span class="text-[11px] text-purple-800 font-semibold block">Item Terjual</span><span id="stat-monthly-items" class="text-lg font-bold text-purple-900">0 Item</span></div>
-        </div> 
-    
-        <!-- Tabel Riwayat -->
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
-              <tr>
-                <th class="p-3">ID TRX</th>
-                <th class="p-3">Waktu</th>
-                <th class="p-3">Rincian Item</th>
-                <th class="p-3 text-right">Total Omset</th>
-                <th class="p-3 text-right text-emerald-700">Est. Laba</th>
-                <th class="p-3 text-center">Aksi</th>
-              </tr>
+              <tr><th class="p-3">ID TRX</th><th class="p-3">Waktu</th><th class="p-3">Rincian Item</th><th class="p-3 text-right">Total Omset</th><th class="p-3 text-right text-emerald-700">Est. Laba</th><th class="p-3 text-center">Aksi</th></tr>
             </thead>
             <tbody id="history-table-body" class="divide-y"></tbody>
           </table>
         </div>
       </div>
-    
-    </div> <!-- Penutup <div id="view-history"> -->
+    </div>
 
     <!-- TAB 3: KELOLA MENU -->
     <div id="view-products" class="hidden space-y-6">
@@ -359,11 +319,6 @@
         <div class="grid grid-cols-2 gap-3">
           <div><label class="text-xs font-semibold text-gray-600">Harga (Rp)</label><input type="number" id="prod-price" min="0" required class="w-full border rounded-lg p-2 text-sm"></div>
           <div><label class="text-xs font-semibold text-gray-600">Stok</label><input type="number" id="prod-stock" min="0" required class="w-full border rounded-lg p-2 text-sm"></div>
-          <!-- Tambahkan di dalam form tambah menu Anda -->
-          <div class="mb-3">
-              <label class="text-xs font-semibold text-gray-600 mb-1">HPP (Modal Per Unit)</label>
-              <input type="number" id="product-hpp-input" placeholder="Contoh: 15000" min="0" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
-          </div>
         </div>
         <div class="flex justify-end space-x-2 pt-4 border-t">
           <button type="button" onclick="closeModal('product-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
@@ -402,14 +357,14 @@
         useFirebase = false;
     }
 
-    //const defaultProducts = [
-     // { id: 1, name: 'V60 Pour Over Coffee', category: 'Minuman', price: 18000, stock: 50 },
-     // { id: 2, name: 'Iced Butterscotch Latte', category: 'Minuman', price: 22000, stock: 40 },
-     // { id: 3, name: 'Dirty Matcha Espresso', category: 'Minuman', price: 24000, stock: 30 },
-     // { id: 4, name: 'Ramen Special Warhome', category: 'Makanan', price: 28000, stock: 25 },
-    //  { id: 5, name: 'Pop Steak Crispy', category: 'Makanan', price: 32000, stock: 20 },
-    //  { id: 6, name: 'French Fries Cheese', category: 'Snack', price: 15000, stock: 60 }
-   // ];
+    const defaultProducts = [
+      { id: 1, name: 'V60 Pour Over Coffee', category: 'Minuman', price: 18000, stock: 50 },
+      { id: 2, name: 'Iced Butterscotch Latte', category: 'Minuman', price: 22000, stock: 40 },
+      { id: 3, name: 'Dirty Matcha Espresso', category: 'Minuman', price: 24000, stock: 30 },
+      { id: 4, name: 'Ramen Special Warhome', category: 'Makanan', price: 28000, stock: 25 },
+      { id: 5, name: 'Pop Steak Crispy', category: 'Makanan', price: 32000, stock: 20 },
+      { id: 6, name: 'French Fries Cheese', category: 'Snack', price: 15000, stock: 60 }
+    ];
 
     let products = JSON.parse(localStorage.getItem('warhome_products')) || defaultProducts;
     let cart = [];
@@ -611,14 +566,29 @@
       });
     }
 
-      if (tab === 'pos') {
-        if (typeof renderProducts === 'function') renderProducts();
-      } else if (tab === 'history') {
-        if (typeof populateYearFilter === 'function') populateYearFilter();
-        if (typeof renderHistory === 'function') renderHistory();
-        if (typeof initChart === 'function') initChart();
-      } else if (tab === 'products') {
-        if (typeof renderProductTable === 'function') renderProductTable();
+    function switchTab(tab) {
+      document.getElementById('view-pos').classList.add('hidden');
+      document.getElementById('view-history').classList.add('hidden');
+      document.getElementById('view-products').classList.add('hidden');
+
+      document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
+      document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
+      document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
+
+      if(tab === 'pos') {
+        document.getElementById('view-pos').classList.remove('hidden');
+        document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
+        renderProducts();
+      } else if(tab === 'history') {
+        document.getElementById('view-history').classList.remove('hidden');
+        document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
+        populateYearFilter();
+        renderHistory();
+        initChart();
+      } else if(tab === 'products') {
+        document.getElementById('view-products').classList.remove('hidden');
+        document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
+        renderProductTable();
       }
     }
 
@@ -1000,315 +970,56 @@
       }
     }
 
-    //function renderHistory() {
-      // 1. Ambil elemen filter dari HTML (pastikan ID elemen sesuai dengan HTML Anda)
-      //const filterTypeEl = document.getElementById('filter-type'); // Opsional: jika ada pilihan harian/bulanan
-      //const filterDateEl = document.getElementById('filter-date-input'); // Input type="date" untuk harian
-     // const monthFilterEl = document.getElementById('filter-month'); // Select bulan
-    //  const yearFilterEl = document.getElementById('filter-year'); // Select tahun
-
-     // const filterType = filterTypeEl ? filterTypeEl.value : 'monthly'; // 'daily' atau 'monthly'
-     // const selectedDate = filterDateEl ? filterDateEl.value : ''; // Format: YYYY-MM-DD
-    //  const monthFilter = monthFilterEl ? monthFilterEl.value : 'all';
-     // const yearFilter = yearFilterEl ? parseInt(yearFilterEl.value) : new Date().getFullYear();
-
-      // Pastikan variabel 'transactions' tersedia (ambil dari localStorage jika kosong)
-     // const allTransactions = (typeof transactions !== 'undefined' && Array.isArray(transactions)) 
-      //  ? transactions 
-       // : (JSON.parse(localStorage.getItem('warhome_transactions')) || []);
-
-      // 2. Filter transaksi berdasarkan tanggal / bulan & tahun
-     // const filtered = allTransactions.filter(t => {
-      //  const rawDate = t.timestamp || t.date;
-      //  if (!rawDate) return false;
-
-      //  const d = new Date(rawDate);
-      //  if (isNaN(d.getTime())) return false;
-
-        // Jika menggunakan filter harian (berdasarkan tanggal spesifik)
-       // if (filterType === 'daily' && selectedDate) {
-       //   const trxDateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
-       //   return trxDateStr === selectedDate;
-       // }
-
-        // Jika menggunakan filter bulanan & tahunan
-      //  const matchYear = d.getFullYear() === yearFilter;
-      //  const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
-      //  return matchYear && matchMonth;
-     // });
-
-      // 3. Hitung ringkasan statistik
-     // const totalRev = filtered.reduce((s, t) => s + (t.total || t.subtotal || 0), 0);
-      
-      // Hitung total profit akurat dari akumulasi item (fallback ke perkiraan jika properti profit tidak ada)
-     // const totalProfit = filtered.reduce((s, t) => {
-      //  if (t.profit !== undefined) return s + t.profit;
-      //  if (t.items) {
-     //     return s + t.items.reduce((is, i) => is + ((i.price - (i.hpp || 0)) * i.qty), 0);
-       // }
-       // return s + Math.round((t.total || 0) * 0.3); // Default 30% jika data hpp kosong
-     // }, 0);
-
-     // const totalItems = filtered.reduce((s, t) => s + (t.items ? t.items.reduce((is, i) => is + i.qty, 0) : 0), 0);
-
-      // 4. Update elemen statistik di UI (jika elemennya ada)
-    //  if (document.getElementById('stat-monthly-revenue')) document.getElementById('stat-monthly-revenue').innerText = formatRp(totalRev);
-     // if (document.getElementById('stat-monthly-profit')) document.getElementById('stat-monthly-profit').innerText = formatRp(totalProfit);
-     // if (document.getElementById('stat-monthly-count')) document.getElementById('stat-monthly-count').innerText = `${filtered.length} TRX`;
-     // if (document.getElementById('stat-monthly-items')) document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
-
-      // 5. Render ke dalam tabel riwayat
-     // const tbody = document.getElementById('history-table-body');
-     // if (!tbody) return;
-
-    //  if (filtered.length === 0) {
-      //  tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-400 text-xs">Tidak ada riwayat transaksi pada periode ini.</td></tr>`;
-      //  return;
-     // }
-
-     // tbody.innerHTML = filtered.map(t => {
-      //  const rawDate = t.timestamp || t.date;
-      //  const d = new Date(rawDate);
-      //  const formattedDate = !isNaN(d.getTime()) ? d.toLocaleString('id-ID') : '-';
-        
-        // Hitung profit per transaksi
-      //  const estProfit = t.profit !== undefined ? t.profit : (t.items ? t.items.reduce((is, i) => is + ((i.price - (i.hpp || 0)) * i.qty), 0) : Math.round((t.total || 0) * 0.3));
-
-       // return `
-       //   <tr class="hover:bg-gray-50 border-b">
-       //     <td class="p-3 font-bold text-xs">${t.id}</td>
-       //     <td class="p-3 text-xs">${formattedDate}</td>
-       //     <td class="p-3 text-xs">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
-       //     <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.total || t.subtotal || 0)}</td>
-       //     <td class="p-3 text-right font-bold text-xs text-emerald-700">${formatRp(estProfit)}</td>
-       //     <td class="p-3 text-center space-x-2">
-        //      <button onclick='showReceiptModal(${JSON.stringify(t).replace(/"/g, '&quot;')})' class="text-amber-700 hover:text-amber-900 text-xs font-semibold">
-         //       <i class="fas fa-print mr-1"></i> Cetak
-         //     </button>
-         //    <button onclick="requestDeleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs font-semibold">
-          //      <i class="fas fa-trash-alt mr-1"></i> Hapus
-          //    </button>
-          //  </td>
-        //  </tr>
-      //  `;
-    //  }).join('');
-   // }
-
-    // 1. Fungsi Utama Render & Filter Riwayat (Hari, Bulan, Tahun)
-    // 1. Fungsi Utama Render & Filter Riwayat
-
-    // ==========================================
-// 1. SINKRONISASI REAL-TIME DARI FIREBASE
-// ==========================================
-    let transactions = [];
-    
-    function initFirebaseSync() {
-      if (typeof firebase === 'undefined') return;
-      
-      const dbRef = firebase.database().ref('transactions');
-      dbRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        transactions = [];
-        if (data) {
-          Object.keys(data).forEach(key => {
-            transactions.push(data[key]);
-          });
-          // Urutkan transaksi dari yang terbaru
-          transactions.sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
-        }
-        
-        // Perbarui komponen UI secara otomatis
-        if (typeof populateYearFilter === 'function') populateYearFilter();
-        if (typeof renderHistory === 'function') renderHistory();
-        if (typeof initChart === 'function') initChart();
-      }, (error) => {
-        console.error("Gagal memuat data dari Firebase:", error);
-      });
-    }
-    
-    window.addEventListener('DOMContentLoaded', () => {
-      initFirebaseSync();
-    });
-    
-    // ==========================================
-    // 2. FUNGSI FILTER & RENDER RIWAYAT TRANSAKSI
-    // ==========================================
-    function renderHistory() {
-      const selectedDate = document.getElementById('filter-date')?.value || ''; // Format: YYYY-MM-DD
-      const selectedMonth = document.getElementById('filter-month')?.value || 'all';
-      const selectedYear = document.getElementById('filter-year')?.value || 'all';
-    
-      if (typeof transactions === 'undefined') return;
-    
-      const filteredTransactions = transactions.filter(trx => {
-        const trxDate = new Date(trx.timestamp || trx.date);
-        if (isNaN(trxDate)) return false;
-        
-        // Filter berdasarkan Hari / Tanggal spesifik
-        if (selectedDate) {
-          const year = trxDate.getFullYear();
-          const month = String(trxDate.getMonth() + 1).padStart(2, '0');
-          const day = String(trxDate.getDate()).padStart(2, '0');
-          const formattedTrxDate = `${year}-${month}-${day}`;
-          
-          if (formattedTrxDate !== selectedDate) return false;
-        }
-    
-        // Filter berdasarkan Bulan
-        if (selectedMonth !== 'all') {
-          if (trxDate.getMonth() !== parseInt(selectedMonth)) return false;
-        }
-    
-        // Filter berdasarkan Tahun
-        if (selectedYear !== 'all') {
-          if (trxDate.getFullYear() !== parseInt(selectedYear)) return false;
-        }
-    
-        return true;
-      });
-    
-      // Tampilkan data ke tabel & perbarui statistik kartu ringkasan
-      updateHistoryTableAndStats(filteredTransactions);
-    }
-    
-    // ==========================================
-    // 3. FUNGSI TABEL, STATISTIK, & TOMBOL AKSI
-    // ==========================================
-    function updateHistoryTableAndStats(filtered) {
-      const tableBody = document.getElementById('history-table-body');
-      if (!tableBody) return;
-    
-      tableBody.innerHTML = '';
-    
-      let totalOmset = 0;
-      let totalProfit = 0;
-      let totalItems = 0;
-      const totalTrxCount = filtered.length;
-    
-      if (totalTrxCount === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-400 text-sm">Tidak ada riwayat transaksi pada filter ini.</td></tr>`;
-      } else {
-        filtered.forEach(trx => {
-          const omset = Number(trx.total || 0);
-          const profit = Number(trx.estimatedProfit || 0);
-          totalOmset += omset;
-          totalProfit += profit;
-    
-          // Hitung total item terjual
-          if (trx.items && Array.isArray(trx.items)) {
-            trx.items.forEach(item => {
-              totalItems += Number(item.qty || 0);
-            });
-          }
-    
-          const dateObj = new Date(trx.timestamp || trx.date);
-          const dateStr = isNaN(dateObj) ? '-' : dateObj.toLocaleDateString('id-ID', {
-            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-          });
-    
-          const itemSummary = trx.items ? trx.items.map(i => `${i.name} (${i.qty}x)`).join(', ') : '-';
-    
-          const row = document.createElement('tr');
-          row.className = 'border-b hover:bg-gray-50 text-xs sm:text-sm';
-          row.innerHTML = `
-            <td class="p-3 font-semibold text-gray-700">${trx.id || '-'}</td>
-            <td class="p-3 text-gray-500">${dateStr}</td>
-            <td class="p-3 text-gray-600 truncate max-w-xs" title="${itemSummary}">${itemSummary}</td>
-            <td class="p-3 text-right font-bold text-gray-800">Rp ${omset.toLocaleString('id-ID')}</td>
-            <td class="p-3 text-right font-bold text-emerald-700">Rp ${profit.toLocaleString('id-ID')}</td>
-            <td class="p-3 text-center flex items-center justify-center gap-1.5">
-              <button onclick="viewTransactionDetail('${trx.id}')" class="text-amber-700 hover:text-amber-900 bg-amber-50 px-2.5 py-1 rounded font-semibold text-xs transition">Detail</button>
-              <button onclick="promptDeleteTransaction('${trx.id}')" class="text-red-600 hover:text-red-800 bg-red-50 px-2.5 py-1 rounded font-semibold text-xs transition" title="Hapus Transaksi"><i class="fas fa-trash-alt"></i></button>
-            </td>
-          `;
-          tableBody.appendChild(row);
-        });
-      }
-    
-      // Update elemen kartu statistik di atas tabel
-      const elRev = document.getElementById('stat-monthly-revenue');
-      const elProf = document.getElementById('stat-monthly-profit');
-      const elCount = document.getElementById('stat-monthly-count');
-      const elItems = document.getElementById('stat-monthly-items');
-    
-      if (elRev) elRev.innerText = `Rp ${totalOmset.toLocaleString('id-ID')}`;
-      if (elProf) elProf.innerText = `Rp ${totalProfit.toLocaleString('id-ID')}`;
-      if (elCount) elCount.innerText = `${totalTrxCount} TRX`;
-      if (elItems) elItems.innerText = `${totalItems} Item`;
-    }
-    
-    // ==========================================
-    // 4. RESET FILTER & POPULATE TAHUN
-    // ==========================================
-    function resetHistoryFilter() {
-      const dateEl = document.getElementById('filter-date');
-      const monthEl = document.getElementById('filter-month');
-      const yearEl = document.getElementById('filter-year');
-    
-      if (dateEl) dateEl.value = '';
-      if (monthEl) monthEl.value = 'all';
-      if (yearEl) yearEl.value = 'all';
-      
-      renderHistory();
-    }
-    
     function populateYearFilter() {
       const yearSelect = document.getElementById('filter-year');
-      if (!yearSelect || typeof transactions === 'undefined') return;
-    
-      const currentSelected = yearSelect.value;
-      const years = [...new Set(transactions.map(trx => {
-        const d = new Date(trx.timestamp || trx.date);
-        return d.getFullYear();
-      }))].filter(y => !isNaN(y));
-    
-      years.sort((a, b) => b - a);
-      if (years.length === 0) years.push(new Date().getFullYear());
-    
-      let options = '<option value="all">Semua Tahun</option>';
-      years.forEach(year => {
-        options += `<option value="${year}">${year}</option>`;
-      });
-    
-      yearSelect.innerHTML = options;
-      yearSelect.value = currentSelected || 'all';
-    }
-    
-    // ==========================================
-    // 5. NAVIGASI TAB AMAN DARI ERROR
-    // ==========================================
-    function switchTab(tab) {
-      const views = ['pos', 'history', 'products'];
-      
-      views.forEach(v => {
-        const viewEl = document.getElementById(`view-${v}`);
-        if (viewEl) {
-          if (v === tab) {
-            viewEl.classList.remove('hidden');
-          } else {
-            viewEl.classList.add('hidden');
-          }
-        }
-    
-        const tabEl = document.getElementById(`tab-${v}`);
-        if (tabEl) {
-          if (v === tab) {
-            tabEl.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
-          } else {
-            tabEl.className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
-          }
-        }
-      });
-    
-      if (tab === 'pos') {
-        if (typeof renderProducts === 'function') renderProducts();
-      } else if (tab === 'history') {
-        if (typeof populateYearFilter === 'function') populateYearFilter();
-        if (typeof renderHistory === 'function') renderHistory();
-        if (typeof initChart === 'function') initChart();
-      } else if (tab === 'products') {
-        if (typeof renderProductTable === 'function') renderProductTable();
+      const currentYear = new Date().getFullYear();
+      yearSelect.innerHTML = '';
+      for (let y = currentYear; y >= currentYear - 3; y--) {
+        yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
       }
+    }
+
+    function renderHistory() {
+      const monthFilter = document.getElementById('filter-month').value;
+      const yearFilter = parseInt(document.getElementById('filter-year').value);
+
+      const filtered = transactions.filter(t => {
+        const d = new Date(t.date);
+        const matchYear = d.getFullYear() === yearFilter;
+        const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
+        return matchYear && matchMonth;
+      });
+
+      const totalRev = filtered.reduce((s, t) => s + (t.total || 0), 0);
+      const totalProfit = Math.round(totalRev * PROFIT_MARGIN);
+      const totalItems = filtered.reduce((s, t) => s + (t.items ? t.items.reduce((is, i) => is + i.qty, 0) : 0), 0);
+
+      document.getElementById('stat-monthly-revenue').innerText = formatRp(totalRev);
+      document.getElementById('stat-monthly-profit').innerText = formatRp(totalProfit);
+      document.getElementById('stat-monthly-count').innerText = `${filtered.length} TRX`;
+      document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
+
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = filtered.map(t => {
+        const estProfit = Math.round((t.total || 0) * PROFIT_MARGIN);
+        return `
+          <tr class="hover:bg-gray-50">
+            <td class="p-3 font-bold text-xs">${t.id}</td>
+            <td class="p-3 text-xs">${new Date(t.date).toLocaleString('id-ID')}</td>
+            <td class="p-3 text-xs">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
+            <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.total)}</td>
+            <td class="p-3 text-right font-bold text-xs text-emerald-700">${formatRp(estProfit)}</td>
+            <td class="p-3 text-center space-x-2">
+              <button onclick='showReceiptModal(${JSON.stringify(t)})' class="text-amber-700 hover:text-amber-900 text-xs font-semibold">
+                <i class="fas fa-print mr-1"></i> Cetak
+              </button>
+              <button onclick="requestDeleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs font-semibold">
+                <i class="fas fa-trash-alt mr-1"></i> Hapus
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function requestDeleteTransaction(trxId) {
@@ -1540,19 +1251,11 @@
     function editProduct(id) {
       const p = products.find(prod => prod.id === id);
       if (!p) return;
-      
       document.getElementById('prod-id').value = p.id;
       document.getElementById('prod-name').value = p.name;
       document.getElementById('prod-category').value = p.category;
       document.getElementById('prod-price').value = p.price;
       document.getElementById('prod-stock').value = p.stock;
-      
-      // TAMBAHKAN BARIS INI UNTUK MENGISI INPUT HPP SAAT DI-EDIT
-      const hppInput = document.getElementById('prod-hpp') || document.getElementById('product-hpp-input');
-      if (hppInput) {
-        hppInput.value = p.hpp || 0;
-      }
-
       document.getElementById('product-modal-title').innerText = "Edit Menu Warhome";
       openProductModal(true);
     }
@@ -1562,58 +1265,45 @@
       const id = document.getElementById('prod-id').value;
       const name = document.getElementById('prod-name').value;
       const category = document.getElementById('prod-category').value;
-      const price = parseFloat(document.getElementById('prod-price').value) || 0;
-      const stock = parseInt(document.getElementById('prod-stock').value) || 0;
-      
-      // 1. AMBIL NILAI HPP DARI INPUT FORM
-      const hppInput = document.getElementById('prod-hpp') || document.getElementById('product-hpp-input');
-      const hpp = hppInput ? (parseFloat(hppInput.value) || 0) : 0;
+      const price = parseFloat(document.getElementById('prod-price').value);
+      const stock = parseInt(document.getElementById('prod-stock').value);
 
       let updatedProducts = [...products];
 
       if (id) {
-        // PERHATIKAN: Jika id Anda berupa string (seperti 'PROD-123'), 
-        // hapus 'parseInt()' agar pencocokan ID tidak berubah menjadi NaN
-        const index = updatedProducts.findIndex(p => p.id == id);
+        const index = updatedProducts.findIndex(p => p.id === parseInt(id));
         if (index !== -1) {
-          // Pertahankan ID lama dan sertakan 'hpp'
-          updatedProducts[index] = { ...updatedProducts[index], id: updatedProducts[index].id, name, category, price, stock, hpp };
+          updatedProducts[index] = { id: parseInt(id), name, category, price, stock };
         }
       } else {
-        // Buat ID unik (mendukung ID angka maupun string waktu)
-        const newId = updatedProducts.length ? (typeof updatedProducts[0].id === 'number' ? Math.max(...updatedProducts.map(p => p.id)) + 1 : 'PROD-' + Date.now()) : 1;
-        updatedProducts.push({ id: newId, name, category, price, stock, hpp });
+        const newId = updatedProducts.length ? Math.max(...updatedProducts.map(p => p.id)) + 1 : 1;
+        updatedProducts.push({ id: newId, name, category, price, stock });
       }
 
       products = updatedProducts;
       localStorage.setItem('warhome_products', JSON.stringify(products));
 
-      // Simpan ke Firebase jika aktif
       if (useFirebase && db && navigator.onLine) {
-        db.ref('products').set(updatedProducts).catch(err => console.error("Gagal sinkron produk ke Firebase:", err));
+        db.ref('products').set(updatedProducts);
+      } else {
+        renderProductTable();
+        renderProducts();
       }
-
-      // 2. SELALU REFRESH TAMPILAN TABEL DAN MENU UTAMA (Jangan ditaruh di dalam blok else)
-      if (typeof renderProductTable === 'function') renderProductTable();
-      if (typeof renderProducts === 'function') renderProducts();
-
       closeModal('product-modal');
     }
+
     function deleteProduct(id) {
       if (confirm("Yakin ingin menghapus menu ini?")) {
         const updatedProducts = products.filter(p => p.id !== id);
         products = updatedProducts;
         localStorage.setItem('warhome_products', JSON.stringify(products));
 
-        // Hapus dari Firebase jika aktif
         if (useFirebase && db && navigator.onLine) {
-          db.ref('products').set(updatedProducts)
-            .catch(err => console.error("Gagal sinkron hapus produk ke Firebase:", err));
+          db.ref('products').set(updatedProducts);
+        } else {
+          renderProductTable();
+          renderProducts();
         }
-
-        // SELALU REFRESH TAMPILAN (Dikeluarkan dari blok if/else agar selalu tereksekusi)
-        if (typeof renderProductTable === 'function') renderProductTable();
-        if (typeof renderProducts === 'function') renderProducts();
       }
     }
   </script>
