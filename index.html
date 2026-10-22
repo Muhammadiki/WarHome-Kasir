@@ -904,10 +904,10 @@
         const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
         const transaction = localTrx.find(t => t.id === transactionId);
     
-        if (transaction) {
+        if (transaction && typeof showReceiptModal === 'function') {
             showReceiptModal(transaction);
         } else {
-            alert("Data resi transaksi tidak ditemukan!");
+            alert("Data resi transaksi tidak ditemukan atau fungsi modal resi belum siap!");
         }
     }
 
