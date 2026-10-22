@@ -153,44 +153,51 @@
           </div>
          <div class="flex flex-wrap items-center gap-2">
     <!-- Pilihan Jenis Filter Waktu -->
-    <div class="flex flex-wrap items-center gap-2">
-    <!-- Pilihan Jenis Filter Waktu -->
-    <select id="filter-type" onchange="toggleFilterType()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 font-semibold text-gray-700">
-        <option value="daily">Harian (Pilih Tanggal)</option>
-        <option value="weekly">Mingguan</option>
-        <option value="monthly" selected>Bulanan</option>
-        <option value="yearly">Tahunan</option>
-        <option value="all">Semua Waktu</option>
-    </select>
+    <div id="view-history" class="hidden space-y-6">
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <h2 class="font-bold text-gray-800 text-base">Riwayat Transaksi & Sesi</h2>
+            <p class="text-xs text-gray-500">Laporan omset, laba bersih, serta log buka/tutup kasir.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Pilihan Jenis Filter Waktu -->
+            <select id="filter-type" onchange="toggleFilterType()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 font-semibold text-gray-700">
+                <option value="daily">Harian</option>
+                <option value="weekly">Mingguan</option>
+                <option value="monthly" selected>Bulanan</option>
+                <option value="yearly">Tahunan</option>
+                <option value="all">Semua Waktu</option>
+            </select>
 
-    <!-- Input Tanggal (Muncul jika filter Harian dipilih) -->
-    <input type="date" id="filter-date" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 hidden">
+            <!-- Input Tanggal (Muncul jika filter Harian dipilih) -->
+            <input type="date" id="filter-date" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 hidden">
 
-    <!-- Pilih Minggu Ke (Muncul jika filter Mingguan dipilih) -->
-    <select id="filter-week" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 hidden">
-        <option value="all">Semua Minggu</option>
-        <option value="1">Minggu ke-1 (Tgl 1 - 7)</option>
-        <option value="2">Minggu ke-2 (Tgl 8 - 14)</option>
-        <option value="3">Minggu ke-3 (Tgl 15 - 21)</option>
-        <option value="4">Minggu ke-4 (Tgl 22 - Akhir)</option>
-    </select>
+            <!-- Pilih Minggu (Muncul jika filter Mingguan dipilih) -->
+            <select id="filter-week" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 hidden">
+                <option value="all">Semua Minggu</option>
+                <option value="1">Minggu ke-1 (Tgl 1-7)</option>
+                <option value="2">Minggu ke-2 (Tgl 8-14)</option>
+                <option value="3">Minggu ke-3 (Tgl 15-21)</option>
+                <option value="4">Minggu ke-4 (Tgl 22-Akhir)</option>
+            </select>
 
-    <!-- Pilih Bulan -->
-    <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
-        <option value="all">Semua Bulan</option>
-        <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
-        <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
-        <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
-        <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
-    </select>
+            <!-- Pilih Bulan -->
+            <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
+                <option value="all">Semua Bulan</option>
+                <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
+                <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
+                <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
+                <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
+            </select>
 
-    <!-- Pilih Tahun -->
-    <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
+            <!-- Pilih Tahun -->
+            <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
 
-    <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
-        <i class="fas fa-print mr-1.5"></i> Cetak Laporan
-    </button>
-</div>
+            <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
+                <i class="fas fa-print mr-1.5"></i> Cetak Laporan
+            </button>
+        </div>
+    </div>
 
     <!-- Pilih Bulan -->
     <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
@@ -1464,7 +1471,9 @@
         const monthSelect = document.getElementById('filter-month');
         const yearSelect = document.getElementById('filter-year');
     
-        // Sembunyikan semua dulu
+        if (!dateInput || !weekSelect || !monthSelect || !yearSelect) return;
+    
+        // Sembunyikan semua elemen filter terlebih dahulu
         dateInput.classList.add('hidden');
         weekSelect.classList.add('hidden');
         monthSelect.classList.add('hidden');
