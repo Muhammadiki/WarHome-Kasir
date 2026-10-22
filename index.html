@@ -319,6 +319,11 @@
         <div class="grid grid-cols-2 gap-3">
           <div><label class="text-xs font-semibold text-gray-600">Harga (Rp)</label><input type="number" id="prod-price" min="0" required class="w-full border rounded-lg p-2 text-sm"></div>
           <div><label class="text-xs font-semibold text-gray-600">Stok</label><input type="number" id="prod-stock" min="0" required class="w-full border rounded-lg p-2 text-sm"></div>
+          <!-- Tambahkan di dalam form tambah menu Anda -->
+          <div class="mb-3">
+              <label class="text-xs font-semibold text-gray-600 mb-1">HPP (Modal Per Unit)</label>
+              <input type="number" id="product-hpp-input" placeholder="Contoh: 15000" min="0" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
         </div>
         <div class="flex justify-end space-x-2 pt-4 border-t">
           <button type="button" onclick="closeModal('product-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
@@ -1251,11 +1256,19 @@
     function editProduct(id) {
       const p = products.find(prod => prod.id === id);
       if (!p) return;
+      
       document.getElementById('prod-id').value = p.id;
       document.getElementById('prod-name').value = p.name;
       document.getElementById('prod-category').value = p.category;
       document.getElementById('prod-price').value = p.price;
       document.getElementById('prod-stock').value = p.stock;
+      
+      // TAMBAHKAN BARIS INI UNTUK MENGISI INPUT HPP SAAT DI-EDIT
+      const hppInput = document.getElementById('prod-hpp') || document.getElementById('product-hpp-input');
+      if (hppInput) {
+        hppInput.value = p.hpp || 0;
+      }
+
       document.getElementById('product-modal-title').innerText = "Edit Menu Warhome";
       openProductModal(true);
     }
@@ -1265,45 +1278,58 @@
       const id = document.getElementById('prod-id').value;
       const name = document.getElementById('prod-name').value;
       const category = document.getElementById('prod-category').value;
-      const price = parseFloat(document.getElementById('prod-price').value);
-      const stock = parseInt(document.getElementById('prod-stock').value);
+      const price = parseFloat(document.getElementById('prod-price').value) || 0;
+      const stock = parseInt(document.getElementById('prod-stock').value) || 0;
+      
+      // 1. AMBIL NILAI HPP DARI INPUT FORM
+      const hppInput = document.getElementById('prod-hpp') || document.getElementById('product-hpp-input');
+      const hpp = hppInput ? (parseFloat(hppInput.value) || 0) : 0;
 
       let updatedProducts = [...products];
 
       if (id) {
-        const index = updatedProducts.findIndex(p => p.id === parseInt(id));
+        // PERHATIKAN: Jika id Anda berupa string (seperti 'PROD-123'), 
+        // hapus 'parseInt()' agar pencocokan ID tidak berubah menjadi NaN
+        const index = updatedProducts.findIndex(p => p.id == id);
         if (index !== -1) {
-          updatedProducts[index] = { id: parseInt(id), name, category, price, stock };
+          // Pertahankan ID lama dan sertakan 'hpp'
+          updatedProducts[index] = { ...updatedProducts[index], id: updatedProducts[index].id, name, category, price, stock, hpp };
         }
       } else {
-        const newId = updatedProducts.length ? Math.max(...updatedProducts.map(p => p.id)) + 1 : 1;
-        updatedProducts.push({ id: newId, name, category, price, stock });
+        // Buat ID unik (mendukung ID angka maupun string waktu)
+        const newId = updatedProducts.length ? (typeof updatedProducts[0].id === 'number' ? Math.max(...updatedProducts.map(p => p.id)) + 1 : 'PROD-' + Date.now()) : 1;
+        updatedProducts.push({ id: newId, name, category, price, stock, hpp });
       }
 
       products = updatedProducts;
       localStorage.setItem('warhome_products', JSON.stringify(products));
 
+      // Simpan ke Firebase jika aktif
       if (useFirebase && db && navigator.onLine) {
-        db.ref('products').set(updatedProducts);
-      } else {
-        renderProductTable();
-        renderProducts();
+        db.ref('products').set(updatedProducts).catch(err => console.error("Gagal sinkron produk ke Firebase:", err));
       }
+
+      // 2. SELALU REFRESH TAMPILAN TABEL DAN MENU UTAMA (Jangan ditaruh di dalam blok else)
+      if (typeof renderProductTable === 'function') renderProductTable();
+      if (typeof renderProducts === 'function') renderProducts();
+
       closeModal('product-modal');
     }
-
     function deleteProduct(id) {
       if (confirm("Yakin ingin menghapus menu ini?")) {
         const updatedProducts = products.filter(p => p.id !== id);
         products = updatedProducts;
         localStorage.setItem('warhome_products', JSON.stringify(products));
 
+        // Hapus dari Firebase jika aktif
         if (useFirebase && db && navigator.onLine) {
-          db.ref('products').set(updatedProducts);
-        } else {
-          renderProductTable();
-          renderProducts();
+          db.ref('products').set(updatedProducts)
+            .catch(err => console.error("Gagal sinkron hapus produk ke Firebase:", err));
         }
+
+        // SELALU REFRESH TAMPILAN (Dikeluarkan dari blok if/else agar selalu tereksekusi)
+        if (typeof renderProductTable === 'function') renderProductTable();
+        if (typeof renderProducts === 'function') renderProducts();
       }
     }
   </script>
