@@ -612,38 +612,38 @@
     }
 
     function switchTab(tab) {
-  const views = ['pos', 'history', 'products'];
-  
-  views.forEach(v => {
-    const viewEl = document.getElementById(`view-${v}`);
-    if (viewEl) {
-      if (v === tab) {
-        viewEl.classList.remove('hidden');
-      } else {
-        viewEl.classList.add('hidden');
+      const views = ['pos', 'history', 'products'];
+      
+      views.forEach(v => {
+        const viewEl = document.getElementById(`view-${v}`);
+        if (viewEl) {
+          if (v === tab) {
+            viewEl.classList.remove('hidden');
+          } else {
+            viewEl.classList.add('hidden');
+          }
+        }
+    
+        const tabEl = document.getElementById(`tab-${v}`);
+        if (tabEl) {
+          if (v === tab) {
+            tabEl.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
+          } else {
+            tabEl.className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
+          }
+        }
+      });
+    
+      if (tab === 'pos') {
+        if (typeof renderProducts === 'function') renderProducts();
+      } else if (tab === 'history') {
+        if (typeof populateYearFilter === 'function') populateYearFilter();
+        if (typeof renderHistory === 'function') renderHistory();
+        if (typeof initChart === 'function') initChart();
+      } else if (tab === 'products') {
+        if (typeof renderProductTable === 'function') renderProductTable();
       }
     }
-
-    const tabEl = document.getElementById(`tab-${v}`);
-    if (tabEl) {
-      if (v === tab) {
-        tabEl.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
-      } else {
-        tabEl.className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
-      }
-    }
-  });
-
-  if (tab === 'pos') {
-    if (typeof renderProducts === 'function') renderProducts();
-  } else if (tab === 'history') {
-    if (typeof populateYearFilter === 'function') populateYearFilter();
-    if (typeof renderHistory === 'function') renderHistory();
-    if (typeof initChart === 'function') initChart();
-  } else if (tab === 'products') {
-    if (typeof renderProductTable === 'function') renderProductTable();
-  }
-}
 
     function populateYearFilter() {
       const yearSelect = document.getElementById('filter-year');
@@ -1157,16 +1157,18 @@
     //  }).join('');
    // }
 
+    // 1. Fungsi Utama Render & Filter Riwayat (Hari, Bulan, Tahun)
     function renderHistory() {
-      const selectedDate = document.getElementById('filter-date').value; // format YYYY-MM-DD
+      const selectedDate = document.getElementById('filter-date').value; // Format: YYYY-MM-DD
       const selectedMonth = document.getElementById('filter-month').value;
       const selectedYear = document.getElementById('filter-year').value;
     
-      // Filter array transaksi (asumsi nama array data transaksi adalah 'transactions')
+      if (typeof transactions === 'undefined') return;
+    
       const filteredTransactions = transactions.filter(trx => {
         const trxDate = new Date(trx.timestamp || trx.date);
         
-        // 1. Filter spesifik hari/tanggal
+        // Filter berdasarkan Hari / Tanggal spesifik
         if (selectedDate) {
           const year = trxDate.getFullYear();
           const month = String(trxDate.getMonth() + 1).padStart(2, '0');
@@ -1176,21 +1178,63 @@
           if (formattedTrxDate !== selectedDate) return false;
         }
     
-        // 2. Filter Bulan
+        // Filter berdasarkan Bulan
         if (selectedMonth !== 'all') {
           if (trxDate.getMonth() !== parseInt(selectedMonth)) return false;
         }
     
-        // 3. Filter Tahun
+        // Filter berdasarkan Tahun
         if (selectedYear !== 'all') {
           if (trxDate.getFullYear() !== parseInt(selectedYear)) return false;
         }
     
         return true;
       });
-
-      // Tampilkan data hasil filter ke tabel dan perbarui rekap statistik
-      updateHistoryTableAndStats(filteredTransactions);
+    
+      // Perbarui tabel dan ringkasan statistik (Omset, Laba, Jumlah TRX, Item)
+      if (typeof updateHistoryTableAndStats === 'function') {
+        updateHistoryTableAndStats(filteredTransactions);
+      }
+    }
+    
+    // 2. Fungsi Reset Filter Riwayat
+    function resetHistoryFilter() {
+      const dateEl = document.getElementById('filter-date');
+      const monthEl = document.getElementById('filter-month');
+      const yearEl = document.getElementById('filter-year');
+    
+      if (dateEl) dateEl.value = '';
+      if (monthEl) monthEl.value = 'all';
+      if (yearEl) yearEl.value = 'all';
+    
+      renderHistory();
+    }
+    
+    // 3. Fungsi Populate Tahun Otomatis di Dropdown
+    function populateYearFilter() {
+      const yearSelect = document.getElementById('filter-year');
+      if (!yearSelect || typeof transactions === 'undefined') return;
+    
+      const currentSelected = yearSelect.value;
+    
+      const years = [...new Set(transactions.map(trx => {
+        const d = new Date(trx.timestamp || trx.date);
+        return d.getFullYear();
+      }))].filter(y => !isNaN(y));
+    
+      years.sort((a, b) => b - a);
+    
+      if (years.length === 0) {
+        years.push(new Date().getFullYear());
+      }
+    
+      let options = '<option value="all">Semua Tahun</option>';
+      years.forEach(year => {
+        options += `<option value="${year}">${year}</option>`;
+      });
+    
+      yearSelect.innerHTML = options;
+      yearSelect.value = currentSelected || 'all';
     }
 
     function updateHistoryTableAndStats(filteredTransactions) {
