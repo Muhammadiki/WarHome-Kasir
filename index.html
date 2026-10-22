@@ -985,37 +985,88 @@
     }
 
     function renderHistory() {
-      const monthFilter = document.getElementById('filter-month').value;
-      const yearFilter = parseInt(document.getElementById('filter-year').value);
+      // 1. Ambil elemen filter dari HTML (pastikan ID elemen sesuai dengan HTML Anda)
+      const filterTypeEl = document.getElementById('filter-type'); // Opsional: jika ada pilihan harian/bulanan
+      const filterDateEl = document.getElementById('filter-date-input'); // Input type="date" untuk harian
+      const monthFilterEl = document.getElementById('filter-month'); // Select bulan
+      const yearFilterEl = document.getElementById('filter-year'); // Select tahun
 
-      const filtered = transactions.filter(t => {
-        const d = new Date(t.date);
+      const filterType = filterTypeEl ? filterTypeEl.value : 'monthly'; // 'daily' atau 'monthly'
+      const selectedDate = filterDateEl ? filterDateEl.value : ''; // Format: YYYY-MM-DD
+      const monthFilter = monthFilterEl ? monthFilterEl.value : 'all';
+      const yearFilter = yearFilterEl ? parseInt(yearFilterEl.value) : new Date().getFullYear();
+
+      // Pastikan variabel 'transactions' tersedia (ambil dari localStorage jika kosong)
+      const allTransactions = (typeof transactions !== 'undefined' && Array.isArray(transactions)) 
+        ? transactions 
+        : (JSON.parse(localStorage.getItem('warhome_transactions')) || []);
+
+      // 2. Filter transaksi berdasarkan tanggal / bulan & tahun
+      const filtered = allTransactions.filter(t => {
+        const rawDate = t.timestamp || t.date;
+        if (!rawDate) return false;
+
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return false;
+
+        // Jika menggunakan filter harian (berdasarkan tanggal spesifik)
+        if (filterType === 'daily' && selectedDate) {
+          const trxDateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+          return trxDateStr === selectedDate;
+        }
+
+        // Jika menggunakan filter bulanan & tahunan
         const matchYear = d.getFullYear() === yearFilter;
         const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
         return matchYear && matchMonth;
       });
 
-      const totalRev = filtered.reduce((s, t) => s + (t.total || 0), 0);
-      const totalProfit = Math.round(totalRev * PROFIT_MARGIN);
+      // 3. Hitung ringkasan statistik
+      const totalRev = filtered.reduce((s, t) => s + (t.total || t.subtotal || 0), 0);
+      
+      // Hitung total profit akurat dari akumulasi item (fallback ke perkiraan jika properti profit tidak ada)
+      const totalProfit = filtered.reduce((s, t) => {
+        if (t.profit !== undefined) return s + t.profit;
+        if (t.items) {
+          return s + t.items.reduce((is, i) => is + ((i.price - (i.hpp || 0)) * i.qty), 0);
+        }
+        return s + Math.round((t.total || 0) * 0.3); // Default 30% jika data hpp kosong
+      }, 0);
+
       const totalItems = filtered.reduce((s, t) => s + (t.items ? t.items.reduce((is, i) => is + i.qty, 0) : 0), 0);
 
-      document.getElementById('stat-monthly-revenue').innerText = formatRp(totalRev);
-      document.getElementById('stat-monthly-profit').innerText = formatRp(totalProfit);
-      document.getElementById('stat-monthly-count').innerText = `${filtered.length} TRX`;
-      document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
+      // 4. Update elemen statistik di UI (jika elemennya ada)
+      if (document.getElementById('stat-monthly-revenue')) document.getElementById('stat-monthly-revenue').innerText = formatRp(totalRev);
+      if (document.getElementById('stat-monthly-profit')) document.getElementById('stat-monthly-profit').innerText = formatRp(totalProfit);
+      if (document.getElementById('stat-monthly-count')) document.getElementById('stat-monthly-count').innerText = `${filtered.length} TRX`;
+      if (document.getElementById('stat-monthly-items')) document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
 
+      // 5. Render ke dalam tabel riwayat
       const tbody = document.getElementById('history-table-body');
+      if (!tbody) return;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-400 text-xs">Tidak ada riwayat transaksi pada periode ini.</td></tr>`;
+        return;
+      }
+
       tbody.innerHTML = filtered.map(t => {
-        const estProfit = Math.round((t.total || 0) * PROFIT_MARGIN);
+        const rawDate = t.timestamp || t.date;
+        const d = new Date(rawDate);
+        const formattedDate = !isNaN(d.getTime()) ? d.toLocaleString('id-ID') : '-';
+        
+        // Hitung profit per transaksi
+        const estProfit = t.profit !== undefined ? t.profit : (t.items ? t.items.reduce((is, i) => is + ((i.price - (i.hpp || 0)) * i.qty), 0) : Math.round((t.total || 0) * 0.3));
+
         return `
-          <tr class="hover:bg-gray-50">
+          <tr class="hover:bg-gray-50 border-b">
             <td class="p-3 font-bold text-xs">${t.id}</td>
-            <td class="p-3 text-xs">${new Date(t.date).toLocaleString('id-ID')}</td>
+            <td class="p-3 text-xs">${formattedDate}</td>
             <td class="p-3 text-xs">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
-            <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.total)}</td>
+            <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.total || t.subtotal || 0)}</td>
             <td class="p-3 text-right font-bold text-xs text-emerald-700">${formatRp(estProfit)}</td>
             <td class="p-3 text-center space-x-2">
-              <button onclick='showReceiptModal(${JSON.stringify(t)})' class="text-amber-700 hover:text-amber-900 text-xs font-semibold">
+              <button onclick='showReceiptModal(${JSON.stringify(t).replace(/"/g, '&quot;')})' class="text-amber-700 hover:text-amber-900 text-xs font-semibold">
                 <i class="fas fa-print mr-1"></i> Cetak
               </button>
               <button onclick="requestDeleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs font-semibold">
