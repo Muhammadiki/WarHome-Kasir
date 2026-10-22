@@ -917,7 +917,14 @@
     function showReceiptModal(trx) {
       currentActiveTransaction = trx;
       document.getElementById('rec-id').innerText = trx.id;
-      document.getElementById('rec-date').innerText = new Date(trx.date).toLocaleDateString('id-ID') + ' ' + new Date(trx.date).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+
+      // AMBIL TANGGAL DENGAN AMAN (Mendukung trx.timestamp maupun trx.date)
+      const rawDate = trx.timestamp || trx.date || new Date().toISOString();
+      const trxDate = new Date(rawDate);
+      
+      const validDate = !isNaN(trxDate.getTime()) ? trxDate : new Date();
+
+      document.getElementById('rec-date').innerText = validDate.toLocaleDateString('id-ID') + ' ' + validDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
       
       document.getElementById('rec-items').innerHTML = trx.items.map(item => `
         <div>
