@@ -1475,6 +1475,11 @@
         if (document.getElementById('stat-monthly-count')) document.getElementById('stat-monthly-count').innerText = totalCount + ' TRX';
         if (document.getElementById('stat-monthly-items')) document.getElementById('stat-monthly-items').innerText = totalItems + ' Item';
     }
+
+    // Panggil renderHistory otomatis saat halaman selesai dimuat
+    document.addEventListener("DOMContentLoaded", function() {
+        renderHistory();
+    });
   </script>
 </body>
 </html>
