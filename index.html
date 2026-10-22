@@ -682,13 +682,16 @@
     }
 
     function openCloseSessionModal() {
-      // 1. Ambil seluruh data transaksi dari localStorage (atau variabel global)
-      const allTransactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
-      
-      // 2. Ambil modal awal kasir
-      const openingCash = parseFloat(localStorage.getItem('warhome_opening_cash')) || 100000;
+      // 1. Ambil data sesi yang aktif (sesuaikan dengan objek 'session' atau dari localStorage 'warhome_session')
+      const activeSession = session || JSON.parse(localStorage.getItem('warhome_session')) || { startCash: 100000 };
+      const openingCash = parseFloat(activeSession.startCash) || 0;
 
-      // 3. Hitung langsung total omset dari seluruh penjualan yang ada
+      // 2. Ambil data transaksi secara akurat (prioritaskan variabel global 'transactions', fallback ke localStorage)
+      const allTransactions = (typeof transactions !== 'undefined' && Array.isArray(transactions)) 
+        ? transactions 
+        : (JSON.parse(localStorage.getItem('warhome_transactions')) || []);
+
+      // 3. Hitung total omset dari seluruh transaksi yang tercatat
       const totalSalesOmzet = allTransactions.reduce((sum, t) => sum + (t.total || t.subtotal || 0), 0);
 
       // 4. Hitung ekspektasi uang kas fisik (Modal awal + Total Omset)
