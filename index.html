@@ -32,7 +32,7 @@
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
 
-  <!-- HEADER NAVBAR TUNGGAL (RAPI & TERPADU) -->
+  <!-- HEADER NAVBAR TUNGGAL TERPADU -->
   <header class="bg-amber-800 text-white shadow-md sticky top-0 z-20 no-print">
     <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-3">
       
@@ -54,9 +54,7 @@
 
       <!-- Informasi Sesi Kasir & Navigasi Utama -->
       <div class="flex flex-wrap items-center gap-3">
-        <div id="session-info-text" class="text-xs text-amber-100 bg-amber-900/60 px-3 py-1.5 rounded-lg flex items-center gap-2">
-          <!-- Injected via JS -->
-        </div>
+        <div id="session-info-text" class="text-xs text-amber-100 bg-amber-900/60 px-3 py-1.5 rounded-lg flex items-center gap-2"></div>
         <div id="session-action-btn"></div>
 
         <nav class="flex space-x-1 border-l border-amber-700/60 pl-3">
@@ -134,7 +132,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
           <div>
             <h2 class="font-bold text-lg text-gray-800 flex items-center"><i class="fas fa-history text-amber-700 mr-2"></i> Riwayat Transaksi</h2>
-            <p class="text-xs text-gray-500">Rekap bulanan dan cetak ulang resi</p>
+            <p class="text-xs text-gray-500">Rekap bulanan, cetak ulang resi, dan kelola data</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
@@ -208,6 +206,28 @@
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
       <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4"><i class="fas fa-door-closed text-red-600 mr-2"></i> Tutup Sesi Kasir</h3>
       <div id="close-session-body" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- MODAL KONFIRMASI HAPUS DENGAN PIN -->
+  <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
+    <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center space-x-3 text-red-600">
+        <i class="fas fa-exclamation-triangle text-2xl"></i>
+        <h3 class="font-bold text-base text-gray-800">Konfirmasi Hapus Transaksi</h3>
+      </div>
+      <p class="text-xs text-gray-600">
+        Data transaksi <span id="delete-trx-id" class="font-bold text-gray-800"></span> akan dihapus permanen. Masukkan PIN keamanan untuk melanjutkan.
+      </p>
+      <div>
+        <label class="text-xs font-semibold text-gray-600">PIN Keamanan (Default: 1234)</label>
+        <input type="password" id="delete-pin-input" maxlength="6" placeholder="Masukkan PIN" class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none tracking-widest text-center font-bold">
+        <p id="delete-pin-error" class="text-[11px] text-red-600 mt-1 hidden"><i class="fas fa-times-circle mr-1"></i> PIN salah! Akses ditolak.</p>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t">
+        <button onclick="closeModal('delete-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg">Batal</button>
+        <button onclick="confirmDeleteTransaction()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow">Hapus Permanen</button>
+      </div>
     </div>
   </div>
 
@@ -332,6 +352,8 @@
     let currentChartPeriod = 'daily';
     let currentActiveTransaction = null;
     let currentPaperSize = localStorage.getItem('warhome_paper_size') || '58mm';
+    let targetDeleteTrxId = null;
+    const SECURITY_PIN = "1234";
 
     const PRINTER_SERVICE_UUID = '00001101-0000-1000-8000-00805f9b34fb';
     let bluetoothDevice = null;
@@ -902,13 +924,46 @@
           <td class="p-3 text-xs">${new Date(t.date).toLocaleString('id-ID')}</td>
           <td class="p-3 text-xs">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
           <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.total)}</td>
-          <td class="p-3 text-center">
+          <td class="p-3 text-center space-x-2">
             <button onclick='showReceiptModal(${JSON.stringify(t)})' class="text-amber-700 hover:text-amber-900 text-xs font-semibold">
               <i class="fas fa-print mr-1"></i> Cetak
+            </button>
+            <button onclick="requestDeleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs font-semibold">
+              <i class="fas fa-trash-alt mr-1"></i> Hapus
             </button>
           </td>
         </tr>
       `).join('');
+    }
+
+    function requestDeleteTransaction(trxId) {
+      targetDeleteTrxId = trxId;
+      document.getElementById('delete-trx-id').innerText = trxId;
+      document.getElementById('delete-pin-input').value = '';
+      document.getElementById('delete-pin-error').classList.add('hidden');
+      document.getElementById('delete-modal').classList.remove('hidden');
+    }
+
+    function confirmDeleteTransaction() {
+      const enteredPin = document.getElementById('delete-pin-input').value;
+      const errorMsg = document.getElementById('delete-pin-error');
+
+      if (enteredPin !== SECURITY_PIN) {
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      transactions = transactions.filter(t => t.id !== targetDeleteTrxId);
+      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
+
+      if (useFirebase && db && navigator.onLine) {
+        db.ref('transactions/' + targetDeleteTrxId).remove();
+      }
+
+      closeModal('delete-modal');
+      renderHistory();
+      if (typeof initChart === 'function') initChart();
+      alert(`Transaksi ${targetDeleteTrxId} berhasil dihapus!`);
     }
 
     function initChart() {
