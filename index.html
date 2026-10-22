@@ -659,12 +659,20 @@
 
     function openCloseSessionModal() {
       if (!session) return alert("Sesi kasir belum dibuka!");
+      
+      const sessionStart = new Date(session.startTime || session.date || 0);
+
       const sessionSales = transactions
-        .filter(t => new Date(t.date) >= new Date(session.startTime))
+        .filter(t => {
+          const trxDate = new Date(t.timestamp || t.date || 0);
+          return trxDate >= sessionStart;
+        })
         .reduce((sum, t) => sum + (t.total || 0), 0);
 
       const expectedCash = (session.startCash || 0) + sessionSales;
       const body = document.getElementById('close-session-body');
+      if (!body) return;
+
       body.innerHTML = `
         <div class="space-y-2 text-sm text-gray-600">
           <div class="flex justify-between"><span>Modal Kas Awal:</span> <span>${formatRp(session.startCash)}</span></div>
@@ -680,9 +688,11 @@
           <button type="button" onclick="closeSession()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow">Tutup Sesi Sekarang</button>
         </div>
       `;
-      document.getElementById('close-session-modal').classList.remove('hidden');
+      
+      const modal = document.getElementById('close-session-modal');
+      if (modal) modal.classList.remove('hidden');
     }
-
+    
     function closeSession() {
       localStorage.removeItem('warhome_session');
       session = null;
