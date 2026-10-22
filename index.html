@@ -658,34 +658,25 @@
     }
 
     function openCloseSessionModal() {
-      // 1. Ambil data transaksi terbaru langsung dari localStorage (atau variabel global)
+      // 1. Ambil seluruh data transaksi dari localStorage (atau variabel global)
       const allTransactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
       
-      // Jika sesi belum ada, buat sesi default dari waktu awal hari ini agar tetap bisa merekap
-      const currentSession = session || { 
-        startCash: parseFloat(localStorage.getItem('warhome_opening_cash')) || 100000, 
-        startTime: new Date(new Date().setHours(0,0,0,0)).toISOString() 
-      };
+      // 2. Ambil modal awal kasir
+      const openingCash = parseFloat(localStorage.getItem('warhome_opening_cash')) || 100000;
 
-      const sessionStart = new Date(currentSession.startTime);
+      // 3. Hitung langsung total omset dari seluruh penjualan yang ada
+      const totalSalesOmzet = allTransactions.reduce((sum, t) => sum + (t.total || t.subtotal || 0), 0);
 
-      // 2. Hitung total penjualan dari transaksi yang terjadi setelah sesi dibuka
-      const sessionSales = allTransactions
-        .filter(t => {
-          const trxDate = new Date(t.timestamp || t.date || 0);
-          return trxDate >= sessionStart;
-        })
-        .reduce((sum, t) => sum + (t.total || t.subtotal || 0), 0);
-
-      const expectedCash = (currentSession.startCash || 0) + sessionSales;
+      // 4. Hitung ekspektasi uang kas fisik (Modal awal + Total Omset)
+      const expectedCash = openingCash + totalSalesOmzet;
       
       const body = document.getElementById('close-session-body');
       if (!body) return;
 
       body.innerHTML = `
         <div class="space-y-2 text-sm text-gray-600">
-          <div class="flex justify-between"><span>Modal Kas Awal:</span> <span class="font-semibold text-gray-800">${formatRp(currentSession.startCash)}</span></div>
-          <div class="flex justify-between"><span>Total Penjualan:</span> <span class="font-semibold text-emerald-600">${formatRp(sessionSales)}</span></div>
+          <div class="flex justify-between"><span>Modal Kas Awal:</span> <span class="font-semibold text-gray-800">${formatRp(openingCash)}</span></div>
+          <div class="flex justify-between"><span>Total Omset Penjualan:</span> <span class="font-semibold text-emerald-600">${formatRp(totalSalesOmzet)}</span></div>
           <div class="flex justify-between font-bold border-t pt-1.5 text-gray-800"><span>Ekspektasi Kas Fisik:</span> <span class="text-amber-800">${formatRp(expectedCash)}</span></div>
         </div>
         <div class="pt-2">
