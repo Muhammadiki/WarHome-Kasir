@@ -612,29 +612,68 @@
     }
 
     function switchTab(tab) {
-      document.getElementById('view-pos').classList.add('hidden');
-      document.getElementById('view-history').classList.add('hidden');
-      document.getElementById('view-products').classList.add('hidden');
-
-      document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
-      document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
-      document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
-
-      if(tab === 'pos') {
-        document.getElementById('view-pos').classList.remove('hidden');
-        document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
-        renderProducts();
-      } else if(tab === 'history') {
-        document.getElementById('view-history').classList.remove('hidden');
-        document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
-        populateYearFilter();
-        renderHistory();
-        initChart();
-      } else if(tab === 'products') {
-        document.getElementById('view-products').classList.remove('hidden');
-        document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
-        renderProductTable();
+  const views = ['pos', 'history', 'products'];
+  
+  views.forEach(v => {
+    const viewEl = document.getElementById(`view-${v}`);
+    if (viewEl) {
+      if (v === tab) {
+        viewEl.classList.remove('hidden');
+      } else {
+        viewEl.classList.add('hidden');
       }
+    }
+
+    const tabEl = document.getElementById(`tab-${v}`);
+    if (tabEl) {
+      if (v === tab) {
+        tabEl.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
+      } else {
+        tabEl.className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
+      }
+    }
+  });
+
+  if (tab === 'pos') {
+    if (typeof renderProducts === 'function') renderProducts();
+  } else if (tab === 'history') {
+    if (typeof populateYearFilter === 'function') populateYearFilter();
+    if (typeof renderHistory === 'function') renderHistory();
+    if (typeof initChart === 'function') initChart();
+  } else if (tab === 'products') {
+    if (typeof renderProductTable === 'function') renderProductTable();
+  }
+}
+
+    function populateYearFilter() {
+      const yearSelect = document.getElementById('filter-year');
+      if (!yearSelect) return;
+    
+      // Simpan nilai yang sedang dipilih saat ini
+      const currentSelected = yearSelect.value;
+    
+      // Ambil daftar tahun unik dari transaksi
+      const years = [...new Set(transactions.map(trx => {
+        const d = new Date(trx.timestamp || trx.date);
+        return d.getFullYear();
+      }))].filter(y => !isNaN(y));
+    
+      // Urutkan dari tahun terbaru
+      years.sort((a, b) => b - a);
+    
+      // Jika tahun kosong, masukkan tahun sekarang
+      if (years.length === 0) {
+        years.push(new Date().getFullYear());
+      }
+    
+      // Generate ulang option HTML
+      let options = '<option value="all">Semua Tahun</option>';
+      years.forEach(year => {
+        options += `<option value="${year}">${year}</option>`;
+      });
+    
+      yearSelect.innerHTML = options;
+      yearSelect.value = currentSelected || 'all';
     }
 
     function checkSession() {
@@ -1204,40 +1243,6 @@
       const elTotalCount = document.getElementById('history-total-count');
       if (elTotalCount) {
         elTotalCount.innerText = totalTransaksi;
-      }
-    }
-
-    function switchTab(tabId) {
-      // Sembunyikan semua view
-      const views = ['pos', 'history', 'products'];
-      views.forEach(v => {
-        const viewEl = document.getElementById(`view-${v}`);
-        if (viewEl) {
-          if (v === tabId) {
-            viewEl.classList.remove('hidden');
-          } else {
-            viewEl.classList.add('hidden');
-          }
-        }
-      });
-    
-      // Perbarui status aktif pada tombol tab navigasi
-      views.forEach(v => {
-        const tabEl = document.getElementById(`tab-${v}`);
-        if (tabEl) {
-          if (v === tabId) {
-            tabEl.classList.add('bg-amber-950', 'text-amber-100');
-            tabEl.classList.remove('hover:bg-amber-700');
-          } else {
-            tabEl.classList.remove('bg-amber-950', 'text-amber-100');
-            tabEl.classList.add('hover:bg-amber-700');
-          }
-        }
-      });
-    
-      // Jika pindah ke tab riwayat, panggil renderHistory
-      if (tabId === 'history' && typeof renderHistory === 'function') {
-        renderHistory();
       }
     }
 
