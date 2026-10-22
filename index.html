@@ -55,10 +55,6 @@
       <!-- Informasi Sesi Kasir & Navigasi Utama -->
       <div class="flex flex-wrap items-center gap-3">
         <div id="session-info-text" class="text-xs text-amber-100 bg-amber-900/60 px-3 py-1.5 rounded-lg flex items-center gap-2"></div>
-        <div class="flex items-center gap-1">
-            <span>📈</span> 
-            <span id="header-total-omset">Rp 0</span>
-        </div>
         <div id="session-action-btn"></div>
 
         <nav class="flex space-x-1 border-l border-amber-700/60 pl-3">
@@ -644,13 +640,9 @@
     }
 
    function updateHeaderSummary() {
-        // 1. Ambil data transaksi dari localStorage atau variabel global
         const allTransactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
-        
-        // 2. Hitung total keseluruhan omset penjualan
         const totalOmzet = allTransactions.reduce((sum, t) => sum + (t.total || t.subtotal || 0), 0);
-    
-        // 3. Masukkan ke elemen teks omset di header (Pastikan elemen di header Anda punya id="header-total-omset")
+        
         const headerOmsetEl = document.getElementById('header-total-omset');
         if (headerOmsetEl) {
             headerOmsetEl.innerText = formatRp(totalOmzet);
@@ -1596,7 +1588,15 @@ function processAndRenderHistoryData(combinedHistory) {
 
     // Panggil renderHistory otomatis saat halaman selesai dimuat
     document.addEventListener("DOMContentLoaded", function() {
-        renderHistory();
+    // Jalankan fungsi-fungsi pemuat data awal Anda di sini
+        if (typeof checkSession === 'function') checkSession();
+        if (typeof loadProducts === 'function') loadProducts();
+        if (typeof loadTransactions === 'function') loadTransactions();
+        
+        // TAMBAHKAN PEMANGGILAN INI AGAR HEADER LANGSUNG MUNCUL
+        if (typeof updateHeaderSummary === 'function') {
+            updateHeaderSummary();
+        }
     });
 
     let transactionToDeleteId = null;
