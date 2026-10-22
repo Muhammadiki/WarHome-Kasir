@@ -519,6 +519,26 @@
         }
       });
 
+      function saveNewProduct(productData) {
+          if (useFirebase && db) {
+              // Simpan langsung ke Firebase Realtime Database
+              const newProductRef = firebase.database().ref('products').push();
+              productData.id = newProductRef.key; // Tangkap ID unik dari Firebase
+              
+              newProductRef.set(productData)
+                  .then(() => {
+                      console.log("Menu berhasil ditambahkan ke Firebase!");
+                      closeModal('product-modal');
+                  })
+                  .catch((error) => {
+                      console.error("Gagal simpan ke Firebase:", error);
+                  });
+          } else {
+              // Cadangan lokal jika offline
+              saveProductToLocalStorage(productData);
+          }
+      }
+
       db.ref('products').on('value', (snapshot) => {
         const val = snapshot.val();
         products = val ? (Array.isArray(val) ? val.filter(Boolean) : Object.values(val)) : defaultProducts;
