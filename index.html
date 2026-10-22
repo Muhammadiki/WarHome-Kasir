@@ -814,69 +814,72 @@
     }
 
     function processDirectCheckout() {
-    if (cart.length === 0) {
-        alert("Keranjang masih kosong!");
-        return;
-    }
-
-    let subtotal = 0;
-    let totalProfit = 0;
-    let totalTax = 0;
-    let totalItemsCount = 0;
-
-    const transactionItems = cart.map(cartItem => {
-        // Cari data menu asli untuk mengambil HPP-nya
-        const menuProduct = products.find(p => p.id === cartItem.id) || {};
-        const itemHpp = menuProduct.hpp || 0;
-        const itemProfit = (cartItem.price - itemHpp) * cartItem.qty;
-
-        subtotal += cartItem.price * cartItem.qty;
-        totalProfit += itemProfit;
-        totalItemsCount += cartItem.qty;
-
-        return {
-            id: cartItem.id,
-            name: cartItem.name,
-            price: cartItem.price,
-            hpp: itemHpp,
-            qty: cartItem.qty,
-            profit: itemProfit
+        if (cart.length === 0) {
+            alert("Keranjang masih kosong!");
+            return;
+        }
+    
+        let subtotal = 0;
+        let totalProfit = 0;
+        let totalItemsCount = 0;
+    
+        const transactionItems = cart.map(cartItem => {
+            const menuProduct = products.find(p => p.id === cartItem.id) || {};
+            const itemHpp = menuProduct.hpp || 0;
+            const itemProfit = (cartItem.price - itemHpp) * cartItem.qty;
+    
+            subtotal += cartItem.price * cartItem.qty;
+            totalProfit += itemProfit;
+            totalItemsCount += cartItem.qty;
+    
+            return {
+                id: cartItem.id,
+                name: cartItem.name,
+                price: cartItem.price,
+                hpp: itemHpp,
+                qty: cartItem.qty,
+                profit: itemProfit
+            };
+        });
+    
+        const tax = subtotal * 0.11; // PPN 11%
+        const grandTotal = subtotal + tax;
+    
+        const transactionId = 'TRX-' + Math.floor(100000 + Math.random() * 900000);
+        const newTransaction = {
+            id: transactionId,
+            timestamp: new Date().toISOString(),
+            items: transactionItems,
+            subtotal: subtotal,
+            tax: tax,
+            total: grandTotal,
+            profit: totalProfit
         };
-    });
-
-    const tax = subtotal * 0.11; // PPN 11%
-    const grandTotal = subtotal + tax;
-
-    const transactionId = 'TRX-' + Math.floor(100000 + Math.random() * 900000);
-    const newTransaction = {
-        id: transactionId,
-        timestamp: new Date().toISOString(),
-        items: transactionItems,
-        subtotal: subtotal,
-        tax: tax,
-        total: grandTotal,
-        profit: totalProfit // <-- Laba bersih total per transaksi
-    };
-
-    // Simpan ke localStorage
-    const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
-    localTrx.unshift(newTransaction);
-    localStorage.setItem('warhome_transactions', JSON.stringify(localTrx));
-
-    // Simpan ke Firebase jika aktif
-    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-        firebase.database().ref('transactions/' + transactionId).set(newTransaction)
-            .catch(err => console.error("Gagal simpan transaksi ke Firebase:", err));
+    
+        // Simpan ke localStorage
+        const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+        localTrx.unshift(newTransaction);
+        localStorage.setItem('warhome_transactions', JSON.stringify(localTrx));
+    
+        // Simpan ke Firebase jika aktif
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+            firebase.database().ref('transactions/' + transactionId).set(newTransaction)
+                .catch(err => console.error("Gagal simpan transaksi ke Firebase:", err));
+        }
+    
+        // Kosongkan keranjang & perbarui tampilan
+        cart = [];
+        if (typeof updateCartUI === 'function') updateCartUI();
+        if (typeof renderProducts === 'function') renderProducts();
+        if (typeof renderHistory === 'function') renderHistory();
+    
+        // OTOMATIS MUNCULKAN RESI SETELAH CHECKOUT BERHASIL
+        if (typeof showReceiptModal === 'function') {
+            showReceiptModal(newTransaction);
+        } else {
+            alert("Transaksi berhasil disimpan! ID: " + transactionId);
+        }
     }
-
-    // Kosongkan keranjang & perbarui tampilan
-    cart = [];
-    if (typeof updateCartUI === 'function') updateCartUI();
-    if (typeof renderProducts === 'function') renderProducts();
-    if (typeof renderHistory === 'function') renderHistory();
-
-    alert("Transaksi berhasil disimpan! ID: " + transactionId);
-}
 
     function showReceiptModal(trx) {
       currentActiveTransaction = trx;
