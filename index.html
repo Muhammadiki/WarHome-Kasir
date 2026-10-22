@@ -658,30 +658,39 @@
     }
 
     function openCloseSessionModal() {
-      if (!session) return alert("Sesi kasir belum dibuka!");
+      // 1. Ambil data transaksi terbaru langsung dari localStorage (atau variabel global)
+      const allTransactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
       
-      const sessionStart = new Date(session.startTime || session.date || 0);
+      // Jika sesi belum ada, buat sesi default dari waktu awal hari ini agar tetap bisa merekap
+      const currentSession = session || { 
+        startCash: parseFloat(localStorage.getItem('warhome_opening_cash')) || 100000, 
+        startTime: new Date(new Date().setHours(0,0,0,0)).toISOString() 
+      };
 
-      const sessionSales = transactions
+      const sessionStart = new Date(currentSession.startTime);
+
+      // 2. Hitung total penjualan dari transaksi yang terjadi setelah sesi dibuka
+      const sessionSales = allTransactions
         .filter(t => {
           const trxDate = new Date(t.timestamp || t.date || 0);
           return trxDate >= sessionStart;
         })
-        .reduce((sum, t) => sum + (t.total || 0), 0);
+        .reduce((sum, t) => sum + (t.total || t.subtotal || 0), 0);
 
-      const expectedCash = (session.startCash || 0) + sessionSales;
+      const expectedCash = (currentSession.startCash || 0) + sessionSales;
+      
       const body = document.getElementById('close-session-body');
       if (!body) return;
 
       body.innerHTML = `
         <div class="space-y-2 text-sm text-gray-600">
-          <div class="flex justify-between"><span>Modal Kas Awal:</span> <span>${formatRp(session.startCash)}</span></div>
-          <div class="flex justify-between"><span>Total Penjualan:</span> <span>${formatRp(sessionSales)}</span></div>
-          <div class="flex justify-between font-bold border-t pt-1.5 text-gray-800"><span>Ekspektasi Kas Fisik:</span> <span>${formatRp(expectedCash)}</span></div>
+          <div class="flex justify-between"><span>Modal Kas Awal:</span> <span class="font-semibold text-gray-800">${formatRp(currentSession.startCash)}</span></div>
+          <div class="flex justify-between"><span>Total Penjualan:</span> <span class="font-semibold text-emerald-600">${formatRp(sessionSales)}</span></div>
+          <div class="flex justify-between font-bold border-t pt-1.5 text-gray-800"><span>Ekspektasi Kas Fisik:</span> <span class="text-amber-800">${formatRp(expectedCash)}</span></div>
         </div>
         <div class="pt-2">
           <label class="text-xs font-semibold text-gray-600">Jumlah Kas Fisik Aktual (Rp)</label>
-          <input type="number" id="actual-cash-input" value="${expectedCash}" min="0" class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none font-bold text-gray-800">
+          <input type="number" id="actual-cash-input" value="${expectedCash}" min="0" class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-gray-800">
         </div>
         <div class="flex justify-end gap-2 pt-2 border-t">
           <button type="button" onclick="closeModal('close-session-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
