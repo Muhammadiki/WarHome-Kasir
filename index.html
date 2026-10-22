@@ -1306,6 +1306,89 @@
         }
       }
     }
+
+    function startSession() {
+        const startCashInput = document.getElementById('start-cash-input');
+        const startCash = parseFloat(startCashInput.value) || 0;
+        const sessionData = {
+            id: 'SESI-' + Date.now(),
+            type: 'OPEN_SESSION',
+            timestamp: new Date().toISOString(),
+            dateStr: new Date().toLocaleDateString('id-ID'),
+            startCash: startCash,
+            operator: "Operator Warhome"
+        };
+    
+        if (useFirebase && db) {
+            // Simpan sesi buka kasir ke Firebase Realtime Database
+            firebase.database().ref('sessions/' + sessionData.id).set(sessionData)
+                .then(() => {
+                    console.log("Sesi kasir berhasil dibuka di Cloud!");
+                    localStorage.setItem('warhome_active_session', JSON.stringify(sessionData));
+                    closeModal('open-session-modal');
+                    checkSession();
+                })
+                .catch(error => console.error("Gagal simpan sesi ke Firebase:", error));
+        } else {
+            // Mode Lokal
+            localStorage.setItem('warhome_active_session', JSON.stringify(sessionData));
+            closeModal('open-session-modal');
+            checkSession();
+        }
+    }
+
+    function confirmCloseSession() {
+        const finalCashInput = document.getElementById('close-actual-cash');
+        const actualCash = parseFloat(finalCashInput.value) || 0;
+        
+        // Ambil data transaksi hari ini untuk rekap
+        const transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+        const todayStr = new Date().toLocaleDateString('id-ID');
+        const todayTrx = transactions.filter(t => new Date(t.timestamp).toLocaleDateString('id-ID') === todayStr);
+        
+        const totalOmset = todayTrx.reduce((sum, t) => sum + t.total, 0);
+        const activeSession = JSON.parse(localStorage.getItem('warhome_active_session')) || { startCash: 0 };
+        const expectedCash = activeSession.startCash + totalOmset;
+        const difference = actualCash - expectedCash;
+    
+        const closeSessionData = {
+            id: 'TUTUP-' + Date.now(),
+            type: 'CLOSE_SESSION',
+            timestamp: new Date().toISOString(),
+            dateStr: todayStr,
+            startCash: activeSession.startCash,
+            totalOmset: totalOmset,
+            expectedCash: expectedCash,
+            actualCash: actualCash,
+            difference: difference,
+            totalTransactions: todayTrx.length
+        };
+    
+        if (useFirebase && db) {
+            // Simpan laporan tutup sesi ke Firebase
+            firebase.database().ref('sessions/' + closeSessionData.id).set(closeSessionData)
+                .then(() => {
+                    console.log("Laporan tutup sesi berhasil disimpan ke Cloud!");
+                    localStorage.removeItem('warhome_active_session');
+                    // Masukkan juga ke riwayat lokal/cloud jika diperlukan
+                    saveSessionToHistory(closeSessionData);
+                    closeModal('close-session-modal');
+                    checkSession();
+                })
+                .catch(error => console.error("Gagal simpan tutup sesi ke Firebase:", error));
+        } else {
+            localStorage.removeItem('warhome_active_session');
+            saveSessionToHistory(closeSessionData);
+            closeModal('close-session-modal');
+            checkSession();
+        }
+    }
+    
+    function saveSessionToHistory(sessionData) {
+        let history = JSON.parse(localStorage.getItem('warhome_session_history')) || [];
+        history.push(sessionData);
+        localStorage.setItem('warhome_session_history', JSON.stringify(history));
+    }
   </script>
 </body>
 </html>
