@@ -331,22 +331,26 @@
   <script>
     import { initializeApp } from "firebase/app";
     import { getAnalytics } from "firebase/analytics";
+    // Konfigurasi Firebase Anda
     const firebaseConfig = {
-      apiKey: "AIzaSyCn3F3DA-_85PbVRSruM5_Xu-bHVwrlQSg",
-      authDomain: "warhome-pos.firebaseapp.com",
-      projectId: "warhome-pos",
-      storageBucket: "warhome-pos.firebasestorage.app",
-      messagingSenderId: "493124045860",
-      appId: "1:493124045860:web:f86f968572e1d02ecd5cb1",
-      measurementId: "G-CMNPL2RHEN"
+        apiKey: "AIzaSyCn3F3DA-_85PbVRSruM5_Xu-bHVwrlQSg",
+        authDomain: "warhome-pos.firebaseapp.com",
+        projectId: "warhome-pos",
+        storageBucket: "warhome-pos.firebasestorage.app",
+        messagingSenderId: "493124045860",
+        appId: "1:493124045860:web:f86f968572e1d02ecd5cb1",
+        measurementId: "G-CMNPL2RHEN"
     };
-
+    
     let db = null;
     let useFirebase = false;
     
     try {
-        if (firebaseConfig.apiKey !== "YOUR_API_KEY" && firebase.apps.length === 0) {
+        if (firebaseConfig.apiKey && firebase.apps.length === 0) {
             firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            useFirebase = true;
+        } else if (firebase.apps.length > 0) {
             db = firebase.database();
             useFirebase = true;
         }
@@ -422,20 +426,56 @@
       }
     }
 
-    function updateBadge(status) {
-      const badge = document.getElementById('cloud-badge');
-      if (!badge) return;
-      if (status === 'cloud') {
-        badge.className = "bg-green-900 text-green-200 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
-        badge.innerHTML = `<i class="fas fa-wifi text-[9px]"></i> Live Cloud`;
-      } else if (status === 'syncing') {
-        badge.className = "bg-yellow-900 text-yellow-200 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
-        badge.innerHTML = `<i class="fas fa-sync fa-spin text-[9px]"></i> Syncing...`;
-      } else {
-        badge.className = "bg-amber-950 text-amber-300 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
-        badge.innerHTML = `<i class="fas fa-hdd text-[9px]"></i> Local Mode`;
-      }
+    //function updateBadge(status) {
+     // const badge = document.getElementById('cloud-badge');
+     // if (!badge) return;
+     // if (status === 'cloud') {
+      //  badge.className = "bg-green-900 text-green-200 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
+       // badge.innerHTML = `<i class="fas fa-wifi text-[9px]"></i> Live Cloud`;
+     // } else if (status === 'syncing') {
+      //  badge.className = "bg-yellow-900 text-yellow-200 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
+       // badge.innerHTML = `<i class="fas fa-sync fa-spin text-[9px]"></i> Syncing...`;
+     // } else {
+       // badge.className = "bg-amber-950 text-amber-300 text-[10px] px-2.5 py-0.5 rounded-full font-normal transition-all flex items-center gap-1";
+       // badge.innerHTML = `<i class="fas fa-hdd text-[9px]"></i> Local Mode`;
+      //}
+    //}
+    function updateCloudBadge() {
+        const badge = document.getElementById('cloud-badge');
+        if (!badge) return;
+        
+        if (useFirebase) {
+            badge.className = "bg-emerald-800 text-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
+            badge.innerText = "Online Mode";
+        } else {
+            badge.className = "bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
+            badge.innerText = "Local Mode";
+        }
     }
+    
+    // Panggil fungsi ini di dalam window.onload atau setelah inisialisasi
+    window.addEventListener('DOMContentLoaded', () => {
+        updateCloudBadge();
+        // Inisialisasi fungsi data lainnya...
+    });
+
+    function saveTransaction(transactionData) {
+    if (useFirebase && db) {
+        // Simpan secara online ke Firebase Realtime Database
+        const newTrxRef = db.ref('transactions').push();
+        newTrxRef.set(transactionData)
+            .then(() => {
+                console.log("Transaksi berhasil disimpan ke Cloud Firebase!");
+            })
+            .catch((error) => {
+                console.error("Gagal simpan ke cloud, beralih ke local:", error);
+                saveToLocalStorage(transactionData);
+            });
+    } else {
+        // Cadangan penyimpanan lokal
+        saveToLocalStorage(transactionData);
+    }
+}
 
     function syncLocalDataToCloud() {
       if (!useFirebase || !db || !navigator.onLine) return;
