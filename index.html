@@ -55,6 +55,10 @@
       <!-- Informasi Sesi Kasir & Navigasi Utama -->
       <div class="flex flex-wrap items-center gap-3">
         <div id="session-info-text" class="text-xs text-amber-100 bg-amber-900/60 px-3 py-1.5 rounded-lg flex items-center gap-2"></div>
+        <div class="flex items-center gap-1">
+            <span>📈</span> 
+            <span id="header-total-omset">Rp 0</span>
+        </div>
         <div id="session-action-btn"></div>
 
         <nav class="flex space-x-1 border-l border-amber-700/60 pl-3">
@@ -639,29 +643,19 @@
       }
     }
 
-    function updateHeaderSummary() {
-    // Ambil data transaksi dari localStorage atau Firebase
-    const allTransactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+   function updateHeaderSummary() {
+        // 1. Ambil data transaksi dari localStorage atau variabel global
+        const allTransactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+        
+        // 2. Hitung total keseluruhan omset penjualan
+        const totalOmzet = allTransactions.reduce((sum, t) => sum + (t.total || t.subtotal || 0), 0);
     
-    // Hitung total omset keseluruhan (atau filter khusus hari ini jika diinginkan)
-    let totalOmzetToday = 0;
-    const todayStr = new Date().toDateString();
-
-    allTransactions.forEach(t => {
-        const trxDate = new Date(t.timestamp || t.date || 0).toDateString();
-        // Jika ingin menghitung omset khusus hari ini:
-        if (trxDate === todayStr) {
-            totalOmzetToday += parseFloat(t.total || t.subtotal || 0);
+        // 3. Masukkan ke elemen teks omset di header (Pastikan elemen di header Anda punya id="header-total-omset")
+        const headerOmsetEl = document.getElementById('header-total-omset');
+        if (headerOmsetEl) {
+            headerOmsetEl.innerText = formatRp(totalOmzet);
         }
-    });
-
-    // Cari elemen HTML di header yang menampilkan omset Rp 0 tersebut lalu perbarui nilainya
-    // (Sesuaikan ID elemen HTML header Anda, contoh: id="header-omset")
-    const headerOmsetEl = document.getElementById('header-omset');
-    if (headerOmsetEl) {
-        headerOmsetEl.innerText = formatRp(totalOmzetToday);
     }
-}
 
     function openOpenSessionModal() {
       document.getElementById('start-cash-input').value = 100000;
