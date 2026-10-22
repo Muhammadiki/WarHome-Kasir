@@ -459,60 +459,54 @@
     });
 
     function saveTransaction(transactionData) {
-    if (useFirebase && db) {
-        // Simpan secara online ke Firebase Realtime Database
-        const newTrxRef = db.ref('transactions').push();
-        newTrxRef.set(transactionData)
-            .then(() => {
-                console.log("Transaksi berhasil disimpan ke Cloud Firebase!");
-            })
-            .catch((error) => {
-                console.error("Gagal simpan ke cloud, beralih ke local:", error);
-                saveToLocalStorage(transactionData);
-            });
-    } else {
-        // Cadangan penyimpanan lokal
-        saveToLocalStorage(transactionData);
+        if (useFirebase) {
+            // Menggunakan objek global firebase.database() untuk SDK Compat
+            firebase.database().ref('transactions').push(transactionData)
+                .then(() => {
+                    console.log("Transaksi berhasil disinkronkan ke Firebase!");
+                })
+                .catch((error) => {
+                    console.error("Gagal sinkron ke Firebase, menyimpan lokal:", error);
+                    saveToLocalStorage(transactionData);
+                });
+        } else {
+            saveToLocalStorage(transactionData);
+        }
     }
-}
 
     function syncLocalDataToCloud() {
-      if (!useFirebase || !db || !navigator.onLine) return;
-
-      const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
-      if (localTrx.length === 0) return;
-
-      updateBadge('syncing');
-
-      db.ref('transactions').once('value').then(snapshot => {
-        const cloudData = snapshot.val() || {};
-        localTrx.forEach(trx => {
-          if (!cloudData[trx.id]) {
-            db.ref('transactions/' + trx.id).set(trx);
-          }
-        });
-        localStorage.removeItem('warhome_transactions');
-        updateBadge('cloud');
-      }).catch(() => updateBadge('local'));
+        if (!useFirebase || !navigator.onLine) return;
+        const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+        if (localTrx.length === 0) return;
+        
+        firebase.database().ref('transactions').once('value').then(snapshot => {
+            const cloudData = snapshot.val() || {};
+            localTrx.forEach(trx => {
+                if (!cloudData[trx.id]) {
+                    firebase.database().ref('transactions/' + trx.id).set(trx);
+                }
+            });
+            localStorage.removeItem('warhome_transactions');
+            updateCloudBadge();
+        }).catch(err => console.error("Sinkronisasi gagal:", err));
     }
 
     window.addEventListener('online', () => syncLocalDataToCloud());
-    window.addEventListener('offline', () => updateBadge('local'));
+    window.addEventListener('offline', () => updateCloudBadge());
 
-    window.onload = function() {
-      setPaperSize(currentPaperSize);
-      checkSession();
-      renderProducts();
-      renderCart();
-      populateYearFilter();
-
-      if (useFirebase && db) {
-        setupRealtimeListeners();
-        syncLocalDataToCloud();
-      } else {
-        updateBadge('local');
-      }
-      renderCategoryFilters();
+    window.onload = function () {
+        setPaperSize(currentPaperSize);
+        checkSession();
+        renderProducts();
+        renderCart();
+        populateYearFilter();
+        if (useFirebase && db) {
+            setupRealtimeListeners();
+            syncLocalDataToCloud();
+        } else {
+            updateCloudBadge(); // Ubah dari updateBadge('local') menjadi updateCloudBadge()
+        }
+        renderCategoryFilters();
     };
 
     function setupRealtimeListeners() {
@@ -521,7 +515,7 @@
           updateBadge('cloud');
           syncLocalDataToCloud();
         } else {
-          updateBadge('local');
+          updateCloudBadge()
         }
       });
 
