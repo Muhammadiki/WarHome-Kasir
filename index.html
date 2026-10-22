@@ -899,6 +899,17 @@
 
       document.getElementById('receipt-modal').classList.remove('hidden');
     }
+    
+    function viewReceipt(transactionId) {
+        const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+        const transaction = localTrx.find(t => t.id === transactionId);
+    
+        if (transaction) {
+            showReceiptModal(transaction);
+        } else {
+            alert("Data resi transaksi tidak ditemukan!");
+        }
+    }
 
     async function connectBluetoothPrinter() {
       try {
