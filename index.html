@@ -1311,37 +1311,39 @@
         const startCashInput = document.getElementById('start-cash-input');
         const startCash = parseFloat(startCashInput.value) || 0;
         const sessionData = {
-            id: 'SESI-' + Date.now(),
+            id: 'SESI-BUKA-' + Date.now(),
             type: 'OPEN_SESSION',
             timestamp: new Date().toISOString(),
             dateStr: new Date().toLocaleDateString('id-ID'),
             startCash: startCash,
+            totalOmset: 0,
+            itemsSummary: 'Buka Kasir (Modal Awal: Rp ' + startCash.toLocaleString('id-ID') + ')',
             operator: "Operator Warhome"
         };
     
         if (useFirebase && db) {
-            // Simpan sesi buka kasir ke Firebase Realtime Database
             firebase.database().ref('sessions/' + sessionData.id).set(sessionData)
                 .then(() => {
-                    console.log("Sesi kasir berhasil dibuka di Cloud!");
                     localStorage.setItem('warhome_active_session', JSON.stringify(sessionData));
+                    saveSessionToHistory(sessionData);
                     closeModal('open-session-modal');
                     checkSession();
+                    renderHistory();
                 })
-                .catch(error => console.error("Gagal simpan sesi ke Firebase:", error));
+                .catch(error => console.error("Gagal simpan sesi buka:", error));
         } else {
-            // Mode Lokal
             localStorage.setItem('warhome_active_session', JSON.stringify(sessionData));
+            saveSessionToHistory(sessionData);
             closeModal('open-session-modal');
             checkSession();
+            renderHistory();
         }
     }
-
+    
     function confirmCloseSession() {
         const finalCashInput = document.getElementById('close-actual-cash');
         const actualCash = parseFloat(finalCashInput.value) || 0;
         
-        // Ambil data transaksi hari ini untuk rekap
         const transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
         const todayStr = new Date().toLocaleDateString('id-ID');
         const todayTrx = transactions.filter(t => new Date(t.timestamp).toLocaleDateString('id-ID') === todayStr);
@@ -1352,7 +1354,7 @@
         const difference = actualCash - expectedCash;
     
         const closeSessionData = {
-            id: 'TUTUP-' + Date.now(),
+            id: 'SESI-TUTUP-' + Date.now(),
             type: 'CLOSE_SESSION',
             timestamp: new Date().toISOString(),
             dateStr: todayStr,
@@ -1361,26 +1363,26 @@
             expectedCash: expectedCash,
             actualCash: actualCash,
             difference: difference,
+            itemsSummary: `Tutup Kasir | Omset: Rp ${totalOmset.toLocaleString('id-ID')} | Selisih: Rp ${difference.toLocaleString('id-ID')}`,
             totalTransactions: todayTrx.length
         };
     
         if (useFirebase && db) {
-            // Simpan laporan tutup sesi ke Firebase
             firebase.database().ref('sessions/' + closeSessionData.id).set(closeSessionData)
                 .then(() => {
-                    console.log("Laporan tutup sesi berhasil disimpan ke Cloud!");
                     localStorage.removeItem('warhome_active_session');
-                    // Masukkan juga ke riwayat lokal/cloud jika diperlukan
                     saveSessionToHistory(closeSessionData);
                     closeModal('close-session-modal');
                     checkSession();
+                    renderHistory();
                 })
-                .catch(error => console.error("Gagal simpan tutup sesi ke Firebase:", error));
+                .catch(error => console.error("Gagal simpan sesi tutup:", error));
         } else {
             localStorage.removeItem('warhome_active_session');
             saveSessionToHistory(closeSessionData);
             closeModal('close-session-modal');
             checkSession();
+            renderHistory();
         }
     }
     
@@ -1389,6 +1391,71 @@
         history.push(sessionData);
         localStorage.setItem('warhome_session_history', JSON.stringify(history));
     }
-  </script>
+
+    function renderHistory() {
+        const transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+        const sessionHistory = JSON.parse(localStorage.getItem('warhome_session_history')) || [];
+        
+        // Gabungkan transaksi dan sesi dengan penanda tipe
+        const combinedHistory = [
+            ...transactions.map(t => ({ ...t, recordType: 'TRANSACTION' })),
+            ...sessionHistory.map(s => ({ ...s, recordType: 'SESSION' }))
+        ];
+    
+        // Urutkan berdasarkan waktu terbaru
+        combinedHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+        const tbody = document.getElementById('history-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+    
+        if (combinedHistory.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Belum ada riwayat transaksi atau sesi.</td></tr>`;
+            return;
+        }
+    
+        combinedHistory.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-gray-50 transition";
+    
+            if (item.recordType === 'SESSION') {
+                // Baris khusus untuk Buka / Tutup Sesi (Warna latar berbeda agar mencolok)
+                const isClose = item.type === 'CLOSE_SESSION';
+                tr.className = isClose ? "bg-purple-50/60 hover:bg-purple-50" : "bg-blue-50/60 hover:bg-blue-50";
+                
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-xs ${isClose ? 'text-purple-800' : 'text-blue-800'}">
+                        <i class="fas ${isClose ? 'fa-lock' : 'fa-door-open'} mr-1"></i> ${item.id}
+                    </td>
+                    <td class="p-3 text-xs">${new Date(item.timestamp).toLocaleString('id-ID')}</td>
+                    <td class="p-3 font-medium text-xs text-gray-700">${item.itemsSummary}</td>
+                    <td class="p-3 text-right font-bold text-xs">-</td>
+                    <td class="p-3 text-right text-xs font-semibold ${isClose && item.difference < 0 ? 'text-red-600' : 'text-emerald-700'}">
+                        ${isClose ? 'Kas Aktual: Rp ' + item.actualCash.toLocaleString('id-ID') : 'Modal: Rp ' + item.startCash.toLocaleString('id-ID')}
+                    </td>
+                    <td class="p-3 text-center text-xs">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isClose ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">
+                            ${isClose ? 'TUTUP SESI' : 'BUKA SESI'}
+                        </span>
+                    </td>
+                `;
+            } else {
+                // Baris standar untuk Transaksi Penjualan POS
+                tr.innerHTML = `
+                    <td class="p-3 font-medium text-xs text-gray-800">${item.id}</td>
+                    <td class="p-3 text-xs">${new Date(item.timestamp).toLocaleString('id-ID')}</td>
+                    <td class="p-3 text-xs">${item.items ? item.items.map(i => `${i.name} (${i.qty})`).join(', ') : '-'}</td>
+                    <td class="p-3 text-right font-bold text-xs text-amber-800">Rp ${(item.total || 0).toLocaleString('id-ID')}</td>
+                    <td class="p-3 text-right text-xs text-emerald-700 font-semibold">Rp ${(item.profit || 0).toLocaleString('id-ID')}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="viewReceipt('${item.id}')" class="text-amber-700 hover:text-amber-900 mr-2" title="Cetak Ulang"><i class="fas fa-print"></i></button>
+                        <button onclick="promptDeleteTransaction('${item.id}')" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+            }
+            tbody.appendChild(tr);
+        });
+    }
+</script>
 </body>
 </html>
