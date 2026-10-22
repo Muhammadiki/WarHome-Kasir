@@ -1342,13 +1342,18 @@
     
     function confirmCloseSession() {
         const finalCashInput = document.getElementById('close-actual-cash');
+        if (!finalCashInput) {
+            console.error("Elemen input kas aktual tidak ditemukan!");
+            return;
+        }
         const actualCash = parseFloat(finalCashInput.value) || 0;
         
+        // Ambil data transaksi dari localStorage atau state aman
         const transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
         const todayStr = new Date().toLocaleDateString('id-ID');
         const todayTrx = transactions.filter(t => new Date(t.timestamp).toLocaleDateString('id-ID') === todayStr);
         
-        const totalOmset = todayTrx.reduce((sum, t) => sum + t.total, 0);
+        const totalOmset = todayTrx.reduce((sum, t) => sum + (t.total || 0), 0);
         const activeSession = JSON.parse(localStorage.getItem('warhome_active_session')) || { startCash: 0 };
         const expectedCash = activeSession.startCash + totalOmset;
         const difference = actualCash - expectedCash;
@@ -1367,22 +1372,22 @@
             totalTransactions: todayTrx.length
         };
     
-        if (useFirebase && db) {
-            firebase.database().ref('sessions/' + closeSessionData.id).set(closeSessionData)
+        if (typeof useFirebase !== 'undefined' && useFirebase && typeof db !== 'undefined' && db) {
+            db.ref('sessions/' + closeSessionData.id).set(closeSessionData)
                 .then(() => {
                     localStorage.removeItem('warhome_active_session');
                     saveSessionToHistory(closeSessionData);
-                    closeModal('close-session-modal');
-                    checkSession();
-                    renderHistory();
+                    if (typeof closeModal === 'function') closeModal('close-session-modal');
+                    if (typeof checkSession === 'function') checkSession();
+                    if (typeof renderHistory === 'function') renderHistory();
                 })
-                .catch(error => console.error("Gagal simpan sesi tutup:", error));
+                .catch(error => console.error("Gagal simpan tutup sesi ke Firebase:", error));
         } else {
             localStorage.removeItem('warhome_active_session');
             saveSessionToHistory(closeSessionData);
-            closeModal('close-session-modal');
-            checkSession();
-            renderHistory();
+            if (typeof closeModal === 'function') closeModal('close-session-modal');
+            if (typeof checkSession === 'function') checkSession();
+            if (typeof renderHistory === 'function') renderHistory();
         }
     }
     
