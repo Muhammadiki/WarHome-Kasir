@@ -1524,15 +1524,63 @@ function processAndRenderHistoryData(combinedHistory) {
     });
 
     function updateBadge(status, text) {
-    const badge = document.getElementById('cloud-badge');
-    if (!badge) return;
-    badge.innerText = text;
-    if (status === 'online') {
-        badge.className = "bg-emerald-950 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
-    } else {
-        badge.className = "bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
+        const badge = document.getElementById('cloud-badge');
+        if (!badge) return;
+        badge.innerText = text;
+        if (status === 'online') {
+            badge.className = "bg-emerald-950 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
+        } else {
+            badge.className = "bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
+        }
     }
-}
+
+    let transactionToDeleteId = null;
+
+    function promptDeleteTransaction(id) {
+        transactionToDeleteId = id;
+        const trxIdEl = document.getElementById('delete-trx-id');
+        if (trxIdEl) trxIdEl.innerText = id;
+        const pinInput = document.getElementById('delete-pin-input');
+        if (pinInput) pinInput.value = '';
+        const pinErr = document.getElementById('delete-pin-error');
+        if (pinErr) pinErr.classList.add('hidden');
+        
+        // Tampilkan modal konfirmasi hapus
+        const modal = document.getElementById('delete-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+    
+    function confirmDeleteTransaction() {
+        const pinInput = document.getElementById('delete-pin-input');
+        const pinError = document.getElementById('delete-pin-error');
+        
+        // PIN Keamanan (Default: 1234)
+        if (!pinInput || pinInput.value !== '1234') {
+            if (pinError) pinError.classList.remove('hidden');
+            return;
+        }
+        
+        if (!transactionToDeleteId) return;
+    
+        // Hapus dari localStorage
+        let localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+        localTrx = localTrx.filter(t => t.id !== transactionToDeleteId);
+        localStorage.setItem('warhome_transactions', JSON.stringify(localTrx));
+    
+        // Hapus dari Firebase jika aktif
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+            firebase.database().ref('transactions/' + transactionToDeleteId).remove()
+                .catch(err => console.error("Gagal menghapus dari Firebase:", err));
+        }
+    
+        // Tutup modal dan refresh riwayat
+        const modal = document.getElementById('delete-modal');
+        if (modal) modal.classList.add('hidden');
+        
+        transactionToDeleteId = null;
+        if (typeof renderHistory === 'function') renderHistory();
+        alert("Transaksi berhasil dihapus secara permanen.");
+    }
   </script>
 </body>
 </html>
