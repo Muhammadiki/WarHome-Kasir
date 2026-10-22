@@ -1158,125 +1158,144 @@
    // }
 
     // 1. Fungsi Utama Render & Filter Riwayat (Hari, Bulan, Tahun)
-    function renderHistory() {
-      const selectedDate = document.getElementById('filter-date').value; // Format: YYYY-MM-DD
-      const selectedMonth = document.getElementById('filter-month').value;
-      const selectedYear = document.getElementById('filter-year').value;
+    // 1. Fungsi Utama Render & Filter Riwayat
+function renderHistory() {
+  const selectedDate = document.getElementById('filter-date')?.value || ''; // Format: YYYY-MM-DD
+  const selectedMonth = document.getElementById('filter-month')?.value || 'all';
+  const selectedYear = document.getElementById('filter-year')?.value || 'all';
+
+  if (typeof transactions === 'undefined') return;
+
+  const filteredTransactions = transactions.filter(trx => {
+    const trxDate = new Date(trx.timestamp || trx.date);
+    if (isNaN(trxDate)) return false;
     
-      if (typeof transactions === 'undefined') return;
-    
-      const filteredTransactions = transactions.filter(trx => {
-        const trxDate = new Date(trx.timestamp || trx.date);
-        
-        // Filter berdasarkan Hari / Tanggal spesifik
-        if (selectedDate) {
-          const year = trxDate.getFullYear();
-          const month = String(trxDate.getMonth() + 1).padStart(2, '0');
-          const day = String(trxDate.getDate()).padStart(2, '0');
-          const formattedTrxDate = `${year}-${month}-${day}`;
-          
-          if (formattedTrxDate !== selectedDate) return false;
-        }
-    
-        // Filter berdasarkan Bulan
-        if (selectedMonth !== 'all') {
-          if (trxDate.getMonth() !== parseInt(selectedMonth)) return false;
-        }
-    
-        // Filter berdasarkan Tahun
-        if (selectedYear !== 'all') {
-          if (trxDate.getFullYear() !== parseInt(selectedYear)) return false;
-        }
-    
-        return true;
-      });
-    
-      // Perbarui tabel dan ringkasan statistik (Omset, Laba, Jumlah TRX, Item)
-      if (typeof updateHistoryTableAndStats === 'function') {
-        updateHistoryTableAndStats(filteredTransactions);
-      }
-    }
-    
-    // 2. Fungsi Reset Filter Riwayat
-    function resetHistoryFilter() {
-      const dateEl = document.getElementById('filter-date');
-      const monthEl = document.getElementById('filter-month');
-      const yearEl = document.getElementById('filter-year');
-    
-      if (dateEl) dateEl.value = '';
-      if (monthEl) monthEl.value = 'all';
-      if (yearEl) yearEl.value = 'all';
-    
-      renderHistory();
-    }
-    
-    // 3. Fungsi Populate Tahun Otomatis di Dropdown
-    function populateYearFilter() {
-      const yearSelect = document.getElementById('filter-year');
-      if (!yearSelect || typeof transactions === 'undefined') return;
-    
-      const currentSelected = yearSelect.value;
-    
-      const years = [...new Set(transactions.map(trx => {
-        const d = new Date(trx.timestamp || trx.date);
-        return d.getFullYear();
-      }))].filter(y => !isNaN(y));
-    
-      years.sort((a, b) => b - a);
-    
-      if (years.length === 0) {
-        years.push(new Date().getFullYear());
-      }
-    
-      let options = '<option value="all">Semua Tahun</option>';
-      years.forEach(year => {
-        options += `<option value="${year}">${year}</option>`;
-      });
-    
-      yearSelect.innerHTML = options;
-      yearSelect.value = currentSelected || 'all';
+    // Filter berdasarkan Hari / Tanggal spesifik
+    if (selectedDate) {
+      const year = trxDate.getFullYear();
+      const month = String(trxDate.getMonth() + 1).padStart(2, '0');
+      const day = String(trxDate.getDate()).padStart(2, '0');
+      const formattedTrxDate = `${year}-${month}-${day}`;
+      
+      if (formattedTrxDate !== selectedDate) return false;
     }
 
-    function updateHistoryTableAndStats(filteredTransactions) {
-      const tableBody = document.getElementById('history-table-body'); // Sesuaikan dengan ID tbody tabel riwayat Anda
-      if (!tableBody) return;
-    
-      tableBody.innerHTML = '';
-      
-      let totalOmset = 0;
-      let totalTransaksi = filteredTransactions.length;
-    
-      if (totalTransaksi === 0) {
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">Tidak ada riwayat transaksi</td></tr>`;
-        return;
-      }
-    
-      filteredTransactions.forEach(trx => {
-        totalOmset += Number(trx.total || 0);
-        
-        // Format tanggal sesuai kebutuhan
-        const dateObj = new Date(trx.timestamp || trx.date);
-        const dateStr = dateObj.toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
+    // Filter berdasarkan Bulan
+    if (selectedMonth !== 'all') {
+      if (trxDate.getMonth() !== parseInt(selectedMonth)) return false;
+    }
+
+    // Filter berdasarkan Tahun
+    if (selectedYear !== 'all') {
+      if (trxDate.getFullYear() !== parseInt(selectedYear)) return false;
+    }
+
+    return true;
+  });
+
+  // Perbarui tabel dan ringkasan statistik
+  updateHistoryTableAndStats(filteredTransactions);
+}
+
+// 2. Fungsi Render Tabel & Statistik Ringkasan (Termasuk Tombol Aksi & Detail)
+function updateHistoryTableAndStats(filtered) {
+  const tableBody = document.getElementById('history-table-body');
+  if (!tableBody) return;
+
+  tableBody.innerHTML = '';
+
+  let totalOmset = 0;
+  let totalProfit = 0;
+  let totalItems = 0;
+  const totalTrxCount = filtered.length;
+
+  if (totalTrxCount === 0) {
+    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-400 text-sm">Tidak ada riwayat transaksi pada filter ini.</td></tr>`;
+  } else {
+    filtered.forEach(trx => {
+      const omset = Number(trx.total || 0);
+      const profit = Number(trx.estimatedProfit || 0);
+      totalOmset += omset;
+      totalProfit += profit;
+
+      // Hitung total item terjual
+      if (trx.items && Array.isArray(trx.items)) {
+        trx.items.forEach(item => {
+          totalItems += Number(item.qty || 0);
         });
-    
-        const row = document.createElement('tr');
-        row.className = 'border-b hover:bg-gray-50';
-        row.innerHTML = `
-          <td class="py-2 px-3 text-sm">${trx.id || '-'}</td>
-          <td class="py-2 px-3 text-sm">${dateStr}</td>
-          <td class="py-2 px-3 text-sm">Rp ${(Number(trx.total) || 0).toLocaleString('id-ID')}</td>
-          <td class="py-2 px-3 text-sm">${trx.paymentMethod || 'Tunai'}</td>
-          <td class="py-2 px-3 text-sm text-center">
-            <button onclick="viewTransactionDetail('${trx.id}')" class="text-amber-700 hover:text-amber-900 font-semibold text-xs bg-amber-50 px-2 py-1 rounded">Detail</button>
-          </td>
-        `;
-        tableBody.appendChild(row);
+      }
+
+      const dateObj = new Date(trx.timestamp || trx.date);
+      const dateStr = isNaN(dateObj) ? '-' : dateObj.toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
+
+      const itemSummary = trx.items ? trx.items.map(i => `${i.name} (${i.qty}x)`).join(', ') : '-';
+
+      const row = document.createElement('tr');
+      row.className = 'border-b hover:bg-gray-50 text-xs sm:text-sm';
+      row.innerHTML = `
+        <td class="p-3 font-semibold text-gray-700">${trx.id || '-'}</td>
+        <td class="p-3 text-gray-500">${dateStr}</td>
+        <td class="p-3 text-gray-600 truncate max-w-xs" title="${itemSummary}">${itemSummary}</td>
+        <td class="p-3 text-right font-bold text-gray-800">Rp ${omset.toLocaleString('id-ID')}</td>
+        <td class="p-3 text-right font-bold text-emerald-700">Rp ${profit.toLocaleString('id-ID')}</td>
+        <td class="p-3 text-center flex items-center justify-center gap-1.5">
+          <button onclick="viewTransactionDetail('${trx.id}')" class="text-amber-700 hover:text-amber-900 bg-amber-50 px-2.5 py-1 rounded font-semibold text-xs">Detail</button>
+          <button onclick="promptDeleteTransaction('${trx.id}')" class="text-red-600 hover:text-red-800 bg-red-50 px-2.5 py-1 rounded font-semibold text-xs" title="Hapus Transaksi"><i class="fas fa-trash-alt"></i></button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  // Update elemen kartu statistik di atas tabel
+  const elRev = document.getElementById('stat-monthly-revenue');
+  const elProf = document.getElementById('stat-monthly-profit');
+  const elCount = document.getElementById('stat-monthly-count');
+  const elItems = document.getElementById('stat-monthly-items');
+
+  if (elRev) elRev.innerText = `Rp ${totalOmset.toLocaleString('id-ID')}`;
+  if (elProf) elProf.innerText = `Rp ${totalProfit.toLocaleString('id-ID')}`;
+  if (elCount) elCount.innerText = `${totalTrxCount} TRX`;
+  if (elItems) elItems.innerText = `${totalItems} Item`;
+}
+
+// 3. Fungsi Reset Filter
+function resetHistoryFilter() {
+  const dateEl = document.getElementById('filter-date');
+  const monthEl = document.getElementById('filter-month');
+  const yearEl = document.getElementById('filter-year');
+
+  if (dateEl) dateEl.value = '';
+  if (monthEl) monthEl.value = 'all';
+  if (yearEl) yearEl.value = 'all';
+  
+  renderHistory();
+}
+
+// 4. Populate Dropdown Tahun Otomatis
+function populateYearFilter() {
+  const yearSelect = document.getElementById('filter-year');
+  if (!yearSelect || typeof transactions === 'undefined') return;
+
+  const currentSelected = yearSelect.value;
+  const years = [...new Set(transactions.map(trx => {
+    const d = new Date(trx.timestamp || trx.date);
+    return d.getFullYear();
+  }))].filter(y => !isNaN(y));
+
+  years.sort((a, b) => b - a);
+  if (years.length === 0) years.push(new Date().getFullYear());
+
+  let options = '<option value="all">Semua Tahun</option>';
+  years.forEach(year => {
+    options += `<option value="${year}">${year}</option>`;
+  });
+
+  yearSelect.innerHTML = options;
+  yearSelect.value = currentSelected || 'all';
+}
     
       // Jika Anda memiliki elemen untuk menampilkan rekap total omset/transaksi
       const elTotalOmset = document.getElementById('history-total-omset');
