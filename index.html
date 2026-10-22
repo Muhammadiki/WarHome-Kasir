@@ -329,8 +329,6 @@
   </div>
 
   <script>
-    import { initializeApp } from "firebase/app";
-    import { getAnalytics } from "firebase/analytics";
     const firebaseConfig = {
       apiKey: "AIzaSyCn3F3DA-_85PbVRSruM5_Xu-bHVwrlQSg",
       authDomain: "warhome-pos.firebaseapp.com",
@@ -340,8 +338,6 @@
       appId: "1:493124045860:web:f86f968572e1d02ecd5cb1",
       measurementId: "G-CMNPL2RHEN"
     };
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
 
     let useFirebase = false;
     let db = null;
