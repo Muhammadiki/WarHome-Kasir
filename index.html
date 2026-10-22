@@ -893,24 +893,34 @@
             profit: totalProfit
         };
     
-        // Simpan ke localStorage
+        // 1. Simpan ke localStorage
         const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
         localTrx.unshift(newTransaction);
         localStorage.setItem('warhome_transactions', JSON.stringify(localTrx));
     
-        // Simpan ke Firebase jika aktif
+        // 2. Simpan ke Firebase jika aktif
         if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
             firebase.database().ref('transactions/' + transactionId).set(newTransaction)
                 .catch(err => console.error("Gagal simpan transaksi ke Firebase:", err));
         }
     
-        // Kosongkan keranjang & perbarui tampilan
-        cart = [];
-        if (typeof updateCartUI === 'function') updateCartUI();
+        // 3. KOSONGKAN KERANJANG SECARA TOTAL DI SINI
+        cart.length = 0; // Mengosongkan array cart tanpa memutus referensinya
+        
+        // Hapus juga cache keranjang di localStorage jika ada
+        localStorage.removeItem('warhome_cart');
+
+        // 4. Perbarui tampilan keranjang di layar (panggil fungsi render yang ada di aplikasi Anda)
+        if (typeof renderCart === 'function') {
+            renderCart();
+        } else if (typeof updateCartUI === 'function') {
+            updateCartUI();
+        }
+
         if (typeof renderProducts === 'function') renderProducts();
         if (typeof renderHistory === 'function') renderHistory();
     
-        // OTOMATIS MUNCULKAN RESI SETELAH CHECKOUT BERHASIL
+        // 5. OTOMATIS MUNCULKAN RESI SETELAH CHECKOUT BERHASIL
         if (typeof showReceiptModal === 'function') {
             showReceiptModal(newTransaction);
         } else {
