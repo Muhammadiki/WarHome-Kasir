@@ -1343,37 +1343,50 @@
     }
     
     function renderHistory() {
-        // Cek apakah Firebase aktif dan siap
         if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
             const dbRef = firebase.database();
             
-            // Ambil data transaksi dan sesi secara bersamaan dari Firebase
             Promise.all([
                 dbRef.ref('transactions').once('value'),
                 dbRef.ref('sessions').once('value')
             ]).then(([snapshotTrx, snapshotSes]) => {
                 const cloudTrx = [];
+                
+                // Ekstraksi data transaksi (mendukung struktur datar maupun bertingkat)
                 snapshotTrx.forEach(childSnap => {
                     const val = childSnap.val();
-                    if (val) cloudTrx.push({ ...val, recordType: 'TRANSACTION', id: val.id || childSnap.key });
+                    if (val) {
+                        if (val.id && val.timestamp) {
+                            // Jika struktur data transaksi langsung tersimpan
+                            cloudTrx.push({ ...val, recordType: 'TRANSACTION' });
+                        } else {
+                            // Jika tersimpan bertingkat di dalam session/key lain
+                            Object.values(val).forEach(nestedVal => {
+                                if (nestedVal && nestedVal.timestamp) {
+                                    cloudTrx.push({ ...nestedVal, recordType: 'TRANSACTION', id: nestedVal.id || 'TRX-' + Date.now() });
+                                }
+                            });
+                        }
+                    }
                 });
     
                 const cloudSes = [];
                 snapshotSes.forEach(childSnap => {
                     const val = childSnap.val();
-                    if (val) cloudSes.push({ ...val, recordType: 'SESSION', id: val.id || childSnap.key });
+                    if (val) {
+                        cloudSes.push({ ...val, recordType: 'SESSION', id: val.id || childSnap.key });
+                    }
                 });
     
                 const combinedHistory = [...cloudTrx, ...cloudSes];
                 
-                // Jika data di cloud kosong, fallback ke localStorage agar data lama tetap tampil
                 if (combinedHistory.length === 0) {
                     renderHistoryFromLocal();
                 } else {
                     processAndRenderHistoryData(combinedHistory);
                 }
             }).catch(err => {
-                console.error("Gagal sinkronisasi dari Firebase, memuat dari lokal:", err);
+                console.error("Gagal sinkronisasi dari Firebase:", err);
                 renderHistoryFromLocal();
             });
         } else {
