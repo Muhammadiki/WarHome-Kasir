@@ -27,15 +27,15 @@
       .print-58mm { width: 58mm !important; font-size: 10px !important; }
       .print-80mm { width: 80mm !important; font-size: 12px !important; }
       .no-print { display: none !important; }
-
-       /* Tambahkan dua baris ini agar warna dan gambar dipaksa keluar */
-      * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      
-      body * { visibility: hidden; }
-      #receipt-modal-content, #receipt-modal-content * { visibility: visible; }
+    }
+    
+    /* Custom Scrollbar for better UI */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+  </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
 
@@ -159,31 +159,14 @@
             <p class="text-xs text-gray-500">Kelola riwayat, edit HPP transaksi, dan cetak ulang resi</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <select id="filter-type" onchange="updateHistoryFilterUI(); renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
-              <option value="all">Semua Waktu</option>
-              <option value="daily">Harian</option>
-              <option value="weekly">Mingguan</option>
-              <option value="monthly" selected>Bulanan</option>
-              <option value="yearly">Tahunan</option>
+            <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
+              <option value="all">Semua Bulan</option>
+              <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
+              <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
+              <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
+              <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
             </select>
-
-            <input type="date" id="filter-date" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 hidden">
-
-            <input type="week" id="filter-week" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 hidden">
-
-            <div id="filter-monthly-group" class="flex gap-2">
-              <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
-                <option value="all">Semua Bulan</option>
-                <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
-                <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
-                <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
-                <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
-              </select>
-              <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
-            </div>
-
-            <select id="filter-year-only" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50 hidden"></select>
-
+            <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
             <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
               <i class="fas fa-print mr-1.5"></i> Cetak Laporan
             </button>
@@ -580,20 +563,10 @@
     window.addEventListener('DOMContentLoaded', () => {
         updateCloudBadge();
         setPaperSize(currentPaperSize);
-        
-        // Setup default nilai filter tanggal ke hari ini
-        const today = new Date();
-        const ty = today.getFullYear();
-        const tm = String(today.getMonth() + 1).padStart(2, '0');
-        const tday = String(today.getDate()).padStart(2, '0');
-        document.getElementById('filter-date').value = `${ty}-${tm}-${tday}`;
-        document.getElementById('filter-week').value = getWeekString(today);
-
         checkSession();
         renderProducts();
         renderCart();
         populateYearFilter();
-        updateHistoryFilterUI();
         if (useFirebase && db) {
             setupRealtimeListeners();
             syncLocalDataToCloud();
@@ -1059,76 +1032,22 @@
 
     function populateYearFilter() {
       const yearSelect = document.getElementById('filter-year');
-      const yearOnlySelect = document.getElementById('filter-year-only');
       const currentYear = new Date().getFullYear();
       yearSelect.innerHTML = '';
-      yearOnlySelect.innerHTML = '';
       for (let y = currentYear; y >= currentYear - 3; y--) {
-        const opt = `<option value="${y}">${y}</option>`;
-        yearSelect.innerHTML += opt;
-        yearOnlySelect.innerHTML += opt;
+        yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
       }
     }
 
-    function getWeekString(date) {
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-        return d.getUTCFullYear() + "-W" + (weekNo < 10 ? "0" : "") + weekNo;
-    }
-
-    function updateHistoryFilterUI() {
-      const type = document.getElementById('filter-type').value;
-      document.getElementById('filter-date').classList.add('hidden');
-      document.getElementById('filter-week').classList.add('hidden');
-      document.getElementById('filter-monthly-group').classList.add('hidden');
-      document.getElementById('filter-year-only').classList.add('hidden');
-
-      if (type === 'daily') document.getElementById('filter-date').classList.remove('hidden');
-      else if (type === 'weekly') document.getElementById('filter-week').classList.remove('hidden');
-      else if (type === 'monthly') document.getElementById('filter-monthly-group').classList.remove('hidden');
-      else if (type === 'yearly') document.getElementById('filter-year-only').classList.remove('hidden');
-    }
-
     function renderHistory() {
-      const type = document.getElementById('filter-type').value;
+      const monthFilter = document.getElementById('filter-month').value;
+      const yearFilter = parseInt(document.getElementById('filter-year').value);
 
       const filtered = transactions.filter(t => {
         const d = new Date(t.date);
-        
-        if (type === 'all') return true;
-        
-        if (type === 'daily') {
-          const filterDate = document.getElementById('filter-date').value;
-          if(!filterDate) return true;
-          const ty = d.getFullYear();
-          const tm = String(d.getMonth() + 1).padStart(2, '0');
-          const tday = String(d.getDate()).padStart(2, '0');
-          return `${ty}-${tm}-${tday}` === filterDate;
-        }
-        
-        if (type === 'weekly') {
-          const filterWeek = document.getElementById('filter-week').value;
-          if(!filterWeek) return true;
-          return getWeekString(d) === filterWeek;
-        }
-        
-        if (type === 'monthly') {
-          const m = document.getElementById('filter-month').value;
-          const y = parseInt(document.getElementById('filter-year').value);
-          const matchYear = d.getFullYear() === y;
-          const matchMonth = m === 'all' || d.getMonth() === parseInt(m);
-          return matchYear && matchMonth;
-        }
-        
-        if (type === 'yearly') {
-          const y = parseInt(document.getElementById('filter-year-only').value);
-          return d.getFullYear() === y;
-        }
-        
-        return true;
+        const matchYear = d.getFullYear() === yearFilter;
+        const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
+        return matchYear && matchMonth;
       });
 
       const totalRev = filtered.reduce((s, t) => s + (t.subtotal || 0), 0); // Omset = Subtotal (tanpa tax)
