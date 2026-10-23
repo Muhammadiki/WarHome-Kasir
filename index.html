@@ -28,7 +28,7 @@
       .print-80mm { width: 80mm !important; font-size: 12px !important; }
       .no-print { display: none !important; }
       
-      {
+      * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -136,31 +136,60 @@
 
     <!-- TAB 2: RIWAYAT & GRAFIK TRANSAKSI -->
     <div id="view-history" class="hidden space-y-6">
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b pb-3">
-          <div>
-            <h2 class="font-bold text-lg text-gray-800 flex items-center">
-              <i class="fas fa-chart-line text-amber-700 mr-2"></i> Analisis Penjualan & Keuntungan
-            </h2>
-            <p class="text-xs text-gray-500">Visualisasi omset pendapatan dan laba bersih nyata Warhome</p>
-          </div>
-          <div class="flex flex-wrap gap-2 items-center">
-            <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold">
-              <button onclick="setChartMetric('revenue')" id="metric-btn-revenue" class="px-2.5 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold">Omset</button>
-              <button onclick="setChartMetric('profit')" id="metric-btn-profit" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Laba Bersih</button>
-              <button onclick="setChartMetric('pnl')" id="metric-btn-pnl" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Laba Rugi (P&L)</button>
+      
+      <!-- GRID GRAFIK (SALES & MENU TERLARIS) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- CARD GRAFIK SALES & PROFIT -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 flex flex-col">
+          <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 border-b pb-3">
+            <div>
+              <h2 class="font-bold text-lg text-gray-800 flex items-center">
+                <i class="fas fa-chart-line text-amber-700 mr-2"></i> Analisis Penjualan
+              </h2>
+              <p class="text-[10px] text-gray-500">Pendapatan dan laba bersih</p>
             </div>
-            <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold">
-              <button onclick="updateChartPeriod('daily')" id="chart-btn-daily" class="px-2.5 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold">Harian</button>
-              <button onclick="updateChartPeriod('weekly')" id="chart-btn-weekly" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Mingguan</button>
-              <button onclick="updateChartPeriod('monthly')" id="chart-btn-monthly" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Bulanan</button>
-              <button onclick="updateChartPeriod('yearly')" id="chart-btn-yearly" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Tahunan</button>
+            <div class="flex flex-col gap-2">
+              <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold self-start">
+                <button onclick="setChartMetric('revenue')" id="metric-btn-revenue" class="px-2 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold">Omset</button>
+                <button onclick="setChartMetric('profit')" id="metric-btn-profit" class="px-2 py-1 rounded-md text-gray-600 hover:text-gray-900">Laba</button>
+                <button onclick="setChartMetric('pnl')" id="metric-btn-pnl" class="px-2 py-1 rounded-md text-gray-600 hover:text-gray-900">P&L</button>
+              </div>
+              <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold self-start">
+                <button onclick="updateChartPeriod('daily')" id="chart-btn-daily" class="px-2 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold">Hari</button>
+                <button onclick="updateChartPeriod('weekly')" id="chart-btn-weekly" class="px-2 py-1 rounded-md text-gray-600 hover:text-gray-900">Mgg</button>
+                <button onclick="updateChartPeriod('monthly')" id="chart-btn-monthly" class="px-2 py-1 rounded-md text-gray-600 hover:text-gray-900">Bln</button>
+                <button onclick="updateChartPeriod('yearly')" id="chart-btn-yearly" class="px-2 py-1 rounded-md text-gray-600 hover:text-gray-900">Thn</button>
+              </div>
             </div>
           </div>
+          <div class="relative flex-1 min-h-[250px]"><canvas id="salesChart"></canvas></div>
         </div>
-        <div class="relative h-64 sm:h-80 w-full"><canvas id="salesChart"></canvas></div>
+
+        <!-- CARD GRAFIK MENU TERLARIS -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 flex flex-col">
+          <div class="border-b pb-3 flex justify-between items-start gap-2">
+            <div>
+              <h2 class="font-bold text-lg text-gray-800 flex items-center">
+                <i class="fas fa-fire text-orange-600 mr-2"></i> Menu Terlaris (Top 10)
+              </h2>
+              <p class="text-[10px] text-gray-500">Diambil dari filter tabel Riwayat Transaksi.</p>
+            </div>
+            <!-- Filter Kategori untuk Grafik Menu Terlaris -->
+            <select id="filter-top-category" onchange="updateTopItemsCategory(this.value)" class="border border-gray-300 rounded-lg text-xs px-2 py-1.5 bg-gray-50 text-gray-700 outline-none shadow-sm cursor-pointer focus:ring-2 focus:ring-amber-500">
+              <option value="All">Semua Kategori</option>
+              <option value="Minuman">Minuman (☕)</option>
+              <option value="Minuman Dingin">Minuman Dingin (❄️)</option>
+              <option value="Makanan">Makanan (🍔)</option>
+              <option value="Snack">Snack (🍪)</option>
+            </select>
+          </div>
+          <div class="relative flex-1 min-h-[250px]"><canvas id="topItemsChart"></canvas></div>
+        </div>
+
       </div>
 
+      <!-- CARD FILTER & TABEL RIWAYAT -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
           <div>
@@ -188,7 +217,7 @@
             <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
 
             <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
-              <i class="fas fa-print mr-1.5"></i> Cetak Laporan
+              <i class="fas fa-print mr-1.5"></i> Cetak
             </button>
           </div>
         </div>
@@ -587,7 +616,9 @@
     let cashSessions = JSON.parse(localStorage.getItem('warhome_cash_sessions')) || [];
     
     let selectedCategory = 'All';
-    let myChart = null;
+    let topItemsCategoryFilter = 'All'; // State filter kategori grafik menu terlaris
+    let myChart = null;          // Untuk Grafik Penjualan & Profit
+    let topItemsChart = null;    // Untuk Grafik Menu Terlaris
     let currentChartPeriod = 'daily';
     let currentChartMetric = 'revenue';
     let currentActiveTransaction = null;
@@ -1363,20 +1394,18 @@
     }
 
     function renderHistory() {
-      const dateFilter = document.getElementById('filter-date').value; // Format: YYYY-MM-DD
+      const dateFilter = document.getElementById('filter-date').value; 
       const monthFilter = document.getElementById('filter-month').value;
       const yearFilter = document.getElementById('filter-year').value;
 
       const filtered = transactions.filter(t => {
         const d = new Date(t.date);
-        const tDateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+        const localDateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 
-        // Filter berdasarkan hari spesifik jika dipilih
         if (dateFilter && dateFilter !== '') {
-          return tDateStr === dateFilter;
+          return localDateStr === dateFilter;
         }
 
-        // Filter berdasarkan bulan dan tahun
         const matchYear = yearFilter === 'all' || d.getFullYear() === parseInt(yearFilter);
         const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
         return matchYear && matchMonth;
@@ -1399,38 +1428,110 @@
       
       if(filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Belum ada transaksi pada filter tanggal/bulan/tahun ini.</td></tr>`;
-        return;
+      } else {
+        tbody.innerHTML = filtered.map(t => {
+          let p = t.profit !== undefined ? t.profit : (t.subtotal - (t.totalHpp || 0));
+          const paymentBadge = t.paymentMethod === 'QRIS' 
+            ? '<span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] rounded-full font-semibold">QRIS</span>' 
+            : '<span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full font-semibold">Cash</span>';
+          
+          return `
+            <tr class="hover:bg-gray-50 transition">
+              <td class="p-3 font-bold text-xs">${t.id}</td>
+              <td class="p-3 text-xs font-semibold text-gray-800">${t.customerName || '-'}</td>
+              <td class="p-3 text-xs">${paymentBadge}</td>
+              <td class="p-3 text-xs text-gray-500">${new Date(t.date).toLocaleString('id-ID')}</td>
+              <td class="p-3 text-xs leading-tight">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
+              <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.subtotal)}</td>
+              <td class="p-3 text-right font-bold text-xs text-emerald-700">${formatRp(p)}</td>
+              <td class="p-3 text-center space-x-1.5 flex justify-center">
+                <button onclick='showReceiptModal(${JSON.stringify(t)})' title="Cetak Ulang" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded text-[10px] font-semibold transition">
+                  <i class="fas fa-print"></i>
+                </button>
+                <button onclick="openEditTrxModal('${t.id}')" title="Edit Transaksi" class="bg-blue-50 hover:bg-blue-100 text-blue-700 p-1.5 rounded text-[10px] font-semibold transition">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="requestDeleteTransaction('${t.id}')" title="Hapus" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded text-[10px] font-semibold transition">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
       }
 
-      tbody.innerHTML = filtered.map(t => {
-        let p = t.profit !== undefined ? t.profit : (t.subtotal - (t.totalHpp || 0));
-        const paymentBadge = t.paymentMethod === 'QRIS' 
-          ? '<span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] rounded-full font-semibold">QRIS</span>' 
-          : '<span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full font-semibold">Cash</span>';
-        
-        return `
-          <tr class="hover:bg-gray-50 transition">
-            <td class="p-3 font-bold text-xs">${t.id}</td>
-            <td class="p-3 text-xs font-semibold text-gray-800">${t.customerName || '-'}</td>
-            <td class="p-3 text-xs">${paymentBadge}</td>
-            <td class="p-3 text-xs text-gray-500">${new Date(t.date).toLocaleString('id-ID')}</td>
-            <td class="p-3 text-xs leading-tight">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
-            <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.subtotal)}</td>
-            <td class="p-3 text-right font-bold text-xs text-emerald-700">${formatRp(p)}</td>
-            <td class="p-3 text-center space-x-1.5 flex justify-center">
-              <button onclick='showReceiptModal(${JSON.stringify(t)})' title="Cetak Ulang" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded text-[10px] font-semibold transition">
-                <i class="fas fa-print"></i>
-              </button>
-              <button onclick="openEditTrxModal('${t.id}')" title="Edit Transaksi" class="bg-blue-50 hover:bg-blue-100 text-blue-700 p-1.5 rounded text-[10px] font-semibold transition">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button onclick="requestDeleteTransaction('${t.id}')" title="Hapus" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded text-[10px] font-semibold transition">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+      // Render Grafik Menu Terlaris berdasarkan data riwayat yang sudah di filter tanggal/bulan/tahun
+      renderTopItemsChart(filtered);
+    }
+
+    function updateTopItemsCategory(cat) {
+      topItemsCategoryFilter = cat;
+      renderHistory(); 
+    }
+
+    function renderTopItemsChart(filteredTransactions) {
+      const canvas = document.getElementById('topItemsChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (topItemsChart) topItemsChart.destroy();
+
+      const itemCounts = {};
+      filteredTransactions.forEach(trx => {
+        if (trx.items) {
+          trx.items.forEach(item => {
+            if (topItemsCategoryFilter !== 'All' && item.category !== topItemsCategoryFilter) {
+              return; // Skip jika tidak cocok dengan filter dropdown grafik
+            }
+            if (!itemCounts[item.name]) itemCounts[item.name] = 0;
+            itemCounts[item.name] += item.qty;
+          });
+        }
+      });
+
+      const sortedItems = Object.keys(itemCounts)
+        .map(name => ({ name, count: itemCounts[name] }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      const labels = sortedItems.map(i => i.name);
+      const data = sortedItems.map(i => i.count);
+
+      topItemsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Total Terjual (Porsi/Pcs)',
+            data: data,
+            backgroundColor: 'rgba(234, 88, 12, 0.85)',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ` ${context.raw} Terjual`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            },
+            y: {
+              ticks: { font: { size: 10 } }
+            }
+          }
+        }
+      });
     }
 
     function openEditTrxModal(trxId) {
@@ -1617,7 +1718,7 @@
       ['revenue', 'profit', 'pnl'].forEach(m => {
         const btn = document.getElementById(`metric-btn-${m}`);
         if (btn) {
-          btn.className = m === metric ? "px-2.5 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold" : "px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900";
+          btn.className = m === metric ? "px-2 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold" : "px-2 py-1 rounded-md text-gray-600 hover:text-gray-900";
         }
       });
       initChart();
@@ -1628,7 +1729,7 @@
       ['daily','weekly','monthly','yearly'].forEach(p => {
         const btn = document.getElementById(`chart-btn-${p}`);
         if (btn) {
-          btn.className = p === period ? "px-3 py-1.5 rounded-md bg-white shadow-sm text-amber-800 font-bold" : "px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900";
+          btn.className = p === period ? "px-2 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold" : "px-2 py-1 rounded-md text-gray-600 hover:text-gray-900";
         }
       });
       initChart();
