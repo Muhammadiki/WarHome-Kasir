@@ -27,7 +27,24 @@
       .print-58mm { width: 58mm !important; font-size: 10px !important; }
       .print-80mm { width: 80mm !important; font-size: 12px !important; }
       .no-print { display: none !important; }
+
+       /* Tambahkan dua baris ini agar warna dan gambar dipaksa keluar */
+     {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      body * { visibility: hidden; }
+      #receipt-modal-content, #receipt-modal-content * { visibility: visible; }
+      /* ... sisa kode print kamu ... */
     }
+    
+    /* Custom Scrollbar for better UI */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
@@ -113,7 +130,7 @@
     <!-- TAB 2: RIWAYAT & GRAFIK -->
     <div id="view-history" class="hidden space-y-6">
       
-      <!-- CARD GRAFIK LENGKAP DENGAN TOGGLE MODE -->
+      <!-- CARD GRAFIK LENGKAP -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b pb-3">
           <div>
@@ -144,7 +161,7 @@
         <div class="relative h-64 sm:h-80 w-full"><canvas id="salesChart"></canvas></div>
       </div>
 
-      <!-- CARD REKAP RINGKASAN OMSET & LABA -->
+      <!-- CARD REKAP & TABEL TRANSAKSI -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
           <div>
@@ -176,7 +193,14 @@
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
-              <tr><th class="p-3">ID TRX</th><th class="p-3">Waktu</th><th class="p-3">Rincian Item</th><th class="p-3 text-right">Total Omset</th><th class="p-3 text-right text-emerald-700">Laba Bersih</th><th class="p-3 text-center">Aksi</th></tr>
+              <tr>
+                <th class="p-3">ID TRX</th>
+                <th class="p-3">Waktu</th>
+                <th class="p-3">Rincian Item</th>
+                <th class="p-3 text-right">Total Omset</th>
+                <th class="p-3 text-right text-emerald-700">Laba Bersih</th>
+                <th class="p-3 text-center">Aksi</th>
+              </tr>
             </thead>
             <tbody id="history-table-body" class="divide-y"></tbody>
           </table>
@@ -193,7 +217,15 @@
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table class="w-full text-left text-sm">
           <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
-            <tr><th class="p-3">Ikon</th><th class="p-3">Nama Menu</th><th class="p-3">Kategori</th><th class="p-3 text-right">HPP (Modal)</th><th class="p-3 text-right">Harga Jual</th><th class="p-3 text-center">Stok</th><th class="p-3 text-center">Aksi</th></tr>
+            <tr>
+              <th class="p-3">Ikon</th>
+              <th class="p-3">Nama Menu</th>
+              <th class="p-3">Kategori</th>
+              <th class="p-3 text-right">HPP (Modal)</th>
+              <th class="p-3 text-right">Harga Jual</th>
+              <th class="p-3 text-center">Stok</th>
+              <th class="p-3 text-center">Aksi</th>
+            </tr>
           </thead>
           <tbody id="products-table-body" class="divide-y"></tbody>
         </table>
@@ -274,22 +306,30 @@
     </div>
   </div>
 
-  <!-- MODAL EDIT HPP TRANSAKSI -->
-  <div id="edit-hpp-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
-    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl flex flex-col max-h-[90vh]">
+  <!-- MODAL EDIT TRANSAKSI FULL -->
+  <div id="edit-trx-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
+    <div class="bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[95vh]">
       <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4 flex justify-between items-center">
-        <span><i class="fas fa-edit text-blue-600 mr-2"></i> Edit HPP Transaksi</span>
-        <span id="edit-hpp-trx-id" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"></span>
+        <span><i class="fas fa-edit text-blue-600 mr-2"></i> Edit Transaksi</span>
+        <span id="edit-trx-id" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"></span>
       </h3>
-      <p class="text-xs text-gray-500 mb-3">Sesuaikan Harga Pokok Penjualan (HPP) satuan untuk item pada transaksi ini. Ini akan memengaruhi kalkulasi Laba Bersih.</p>
+      <p class="text-xs text-gray-500 mb-3">Ubah jumlah, harga jual, HPP, atau hapus item. Stok akan disesuaikan otomatis ke sistem.</p>
       
-      <div id="edit-hpp-items-container" class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1 border border-gray-100 p-2 rounded bg-gray-50">
+      <div id="edit-trx-items-container" class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1 scrollbar-hide">
         <!-- Input fields will be injected here -->
       </div>
 
+      <div class="border-t pt-3 space-y-1.5 text-sm mb-4">
+        <div class="flex justify-between text-gray-500"><span>Subtotal (Omset)</span><span id="edit-trx-subtotal">Rp 0</span></div>
+        <div class="flex justify-between text-gray-500"><span>Total HPP (Modal)</span><span id="edit-trx-hpp">Rp 0</span></div>
+        <div class="flex justify-between text-emerald-600 font-bold"><span>Laba Bersih</span><span id="edit-trx-profit">Rp 0</span></div>
+        <div class="flex justify-between text-gray-500"><span>PPN (11%)</span><span id="edit-trx-tax">Rp 0</span></div>
+        <div class="flex justify-between font-bold text-lg text-gray-800 border-t pt-1"><span>Total Bayar</span><span id="edit-trx-total">Rp 0</span></div>
+      </div>
+
       <div class="flex justify-end gap-2 pt-3 border-t">
-        <button type="button" onclick="closeModal('edit-hpp-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
-        <button type="button" onclick="saveEditedTrxHpp()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow">Simpan Perubahan</button>
+        <button type="button" onclick="closeModal('edit-trx-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
+        <button type="button" onclick="saveEditedTrx()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow">Simpan Perubahan</button>
       </div>
     </div>
   </div>
@@ -417,7 +457,8 @@
     let currentPaperSize = localStorage.getItem('warhome_paper_size') || '58mm';
     
     let targetDeleteTrxId = null;
-    let currentEditHppTrxId = null;
+    let currentEditTrxId = null;
+    let currentEditTrxData = null;
     const SECURITY_PIN = "1234";
 
     const PRINTER_SERVICE_UUID = '00001101-0000-1000-8000-00805f9b34fb';
@@ -586,23 +627,23 @@
       document.getElementById('view-history').classList.add('hidden');
       document.getElementById('view-products').classList.add('hidden');
 
-      document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
-      document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
-      document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition";
+      document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
+      document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
+      document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
 
       if(tab === 'pos') {
         document.getElementById('view-pos').classList.remove('hidden');
-        document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
+        document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition cursor-pointer";
         renderProducts();
       } else if(tab === 'history') {
         document.getElementById('view-history').classList.remove('hidden');
-        document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
+        document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition cursor-pointer";
         populateYearFilter();
         renderHistory();
         initChart();
       } else if(tab === 'products') {
         document.getElementById('view-products').classList.remove('hidden');
-        document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition";
+        document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition cursor-pointer";
         renderProductTable();
       }
     }
@@ -1021,7 +1062,6 @@
 
       const totalRev = filtered.reduce((s, t) => s + (t.subtotal || 0), 0); // Omset = Subtotal (tanpa tax)
       const totalProfit = filtered.reduce((s, t) => {
-          // Menyesuaikan format lama yang mungkin belum ada properti profit
           let p = t.profit;
           if (p === undefined) p = t.subtotal - (t.totalHpp || 0);
           return s + p;
@@ -1034,6 +1074,12 @@
       document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
 
       const tbody = document.getElementById('history-table-body');
+      
+      if(filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400">Belum ada transaksi di bulan/tahun ini.</td></tr>`;
+        return;
+      }
+
       tbody.innerHTML = filtered.map(t => {
         let p = t.profit !== undefined ? t.profit : (t.subtotal - (t.totalHpp || 0));
         return `
@@ -1047,7 +1093,7 @@
               <button onclick='showReceiptModal(${JSON.stringify(t)})' title="Cetak Ulang" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded text-[10px] font-semibold transition">
                 <i class="fas fa-print"></i>
               </button>
-              <button onclick="openEditHppModal('${t.id}')" title="Edit HPP" class="bg-blue-50 hover:bg-blue-100 text-blue-700 p-1.5 rounded text-[10px] font-semibold transition">
+              <button onclick="openEditTrxModal('${t.id}')" title="Edit Transaksi" class="bg-blue-50 hover:bg-blue-100 text-blue-700 p-1.5 rounded text-[10px] font-semibold transition">
                 <i class="fas fa-edit"></i>
               </button>
               <button onclick="requestDeleteTransaction('${t.id}')" title="Hapus" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded text-[10px] font-semibold transition">
@@ -1059,58 +1105,152 @@
       }).join('');
     }
 
-    // FUNGSI EDIT HPP TRANSAKSI
-    function openEditHppModal(trxId) {
+    // FUNGSI EDIT TRANSAKSI PENUH (FULL EDIT)
+    function openEditTrxModal(trxId) {
       const trx = transactions.find(t => t.id === trxId);
       if(!trx) return;
-      currentEditHppTrxId = trxId;
-      document.getElementById('edit-hpp-trx-id').innerText = trxId;
-
-      const container = document.getElementById('edit-hpp-items-container');
-      container.innerHTML = trx.items.map((item, index) => `
-        <div class="flex items-center justify-between gap-2 border-b border-gray-200 pb-2 last:border-0 last:pb-0">
-          <div class="flex-1">
-            <p class="text-xs font-bold text-gray-800">${item.name}</p>
-            <p class="text-[10px] text-gray-500">Qty: ${item.qty} | Harga Jual: ${formatRp(item.price)}</p>
-          </div>
-          <div class="w-28">
-            <label class="text-[10px] font-semibold text-gray-600">HPP Satuan (Rp)</label>
-            <input type="number" id="edit-hpp-item-${index}" value="${item.hpp || 0}" min="0" class="w-full border border-gray-300 rounded p-1 text-xs text-right focus:ring-1 focus:ring-blue-500 outline-none">
-          </div>
-        </div>
-      `).join('');
-
-      document.getElementById('edit-hpp-modal').classList.remove('hidden');
+      currentEditTrxId = trxId;
+      // Duplikasi dalam memori (Deep Clone) agar data asli tak berubah sebelum disimpan
+      currentEditTrxData = JSON.parse(JSON.stringify(trx));
+      
+      document.getElementById('edit-trx-id').innerText = trxId;
+      renderEditTrxModal();
+      document.getElementById('edit-trx-modal').classList.remove('hidden');
     }
 
-    function saveEditedTrxHpp() {
-      const trxIndex = transactions.findIndex(t => t.id === currentEditHppTrxId);
-      if(trxIndex === -1) return;
+    function renderEditTrxModal() {
+      const container = document.getElementById('edit-trx-items-container');
       
-      let trx = transactions[trxIndex];
-      let newTotalHpp = 0;
-
-      trx.items.forEach((item, index) => {
-        const inputEl = document.getElementById(`edit-hpp-item-${index}`);
-        const newHpp = parseFloat(inputEl.value) || 0;
-        item.hpp = newHpp; // update hpp di dalam item transaksi
-        newTotalHpp += (newHpp * item.qty);
-      });
-
-      trx.totalHpp = newTotalHpp;
-      trx.profit = trx.subtotal - newTotalHpp; // Kalkulasi laba bersih terbaru
-      transactions[trxIndex] = trx;
-
-      // Save Changes
-      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
-      if (useFirebase && db && navigator.onLine) {
-        db.ref('transactions/' + trx.id).set(trx);
+      if(currentEditTrxData.items.length === 0) {
+        container.innerHTML = `<div class="text-center text-red-500 text-sm py-4"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>Tidak ada item tersisa. Menyimpan sekarang akan menghapus transaksi ini.</div>`;
+      } else {
+        container.innerHTML = currentEditTrxData.items.map((item, index) => `
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 border border-gray-200 p-3 rounded-lg bg-gray-50 relative">
+            <div class="flex-1 w-full">
+              <p class="text-sm font-bold text-gray-800">${item.name}</p>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <div class="w-16">
+                  <label class="text-[10px] text-gray-500 font-semibold">Qty</label>
+                  <input type="number" oninput="updateEditTrxItem(${index}, 'qty', this.value)" value="${item.qty}" min="1" class="w-full border border-gray-300 rounded p-1 text-xs text-center focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="flex-1 min-w-[100px]">
+                  <label class="text-[10px] text-gray-500 font-semibold">HPP / Modal (Rp)</label>
+                  <input type="number" oninput="updateEditTrxItem(${index}, 'hpp', this.value)" value="${item.hpp || 0}" min="0" class="w-full border border-gray-300 rounded p-1 text-xs text-right focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="flex-1 min-w-[100px]">
+                  <label class="text-[10px] text-gray-500 font-semibold">Harga Jual (Rp)</label>
+                  <input type="number" oninput="updateEditTrxItem(${index}, 'price', this.value)" value="${item.price}" min="0" class="w-full border border-gray-300 rounded p-1 text-xs text-right focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+              </div>
+            </div>
+            <button onclick="removeEditTrxItem(${index})" title="Hapus Item" class="mt-2 sm:mt-0 px-3 py-4 text-red-500 hover:text-white hover:bg-red-500 bg-red-50 rounded-lg self-end sm:self-center transition">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        `).join('');
       }
 
-      closeModal('edit-hpp-modal');
+      // Hitung ulang semua nominal di transaksi hasil edit
+      let subtotal = 0;
+      let totalHpp = 0;
+      currentEditTrxData.items.forEach(item => {
+        subtotal += (item.price * item.qty);
+        totalHpp += (item.hpp * item.qty);
+      });
+      
+      currentEditTrxData.subtotal = subtotal;
+      currentEditTrxData.totalHpp = totalHpp;
+      currentEditTrxData.tax = Math.round(subtotal * 0.11);
+      currentEditTrxData.total = subtotal + currentEditTrxData.tax;
+      currentEditTrxData.profit = subtotal - totalHpp;
+
+      document.getElementById('edit-trx-subtotal').innerText = formatRp(subtotal);
+      document.getElementById('edit-trx-hpp').innerText = formatRp(totalHpp);
+      document.getElementById('edit-trx-profit').innerText = formatRp(currentEditTrxData.profit);
+      document.getElementById('edit-trx-tax').innerText = formatRp(currentEditTrxData.tax);
+      document.getElementById('edit-trx-total').innerText = formatRp(currentEditTrxData.total);
+    }
+
+    function updateEditTrxItem(index, field, value) {
+      let val = parseFloat(value) || 0;
+      if (field === 'qty' && val < 1) val = 1; // Mencegah qty < 1 lewat input manual. Gunakan tombol hapus.
+      currentEditTrxData.items[index][field] = val;
+      renderEditTrxModal();
+    }
+
+    function removeEditTrxItem(index) {
+      currentEditTrxData.items.splice(index, 1);
+      renderEditTrxModal();
+    }
+
+    function saveEditedTrx() {
+      const origTrxIndex = transactions.findIndex(t => t.id === currentEditTrxId);
+      if(origTrxIndex === -1) return;
+      const origTrx = transactions[origTrxIndex];
+
+      // Skenario jika semua barang dihapus
+      if(currentEditTrxData.items.length === 0) {
+        customConfirm("Semua item dihapus. Menyimpan akan menghapus total transaksi ini. Lanjutkan?", () => {
+          // Kembalikan stok seperti semula
+          let updatedProducts = [...products];
+          origTrx.items.forEach(oldItem => {
+            let p = updatedProducts.find(p => p.id === oldItem.id);
+            if(p) p.stock += oldItem.qty;
+          });
+          products = updatedProducts;
+          localStorage.setItem('warhome_products', JSON.stringify(products));
+
+          // Proses hapus permanen transaksi
+          transactions = transactions.filter(t => t.id !== currentEditTrxId);
+          localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
+          if (useFirebase && db && navigator.onLine) {
+            db.ref('products').set(products);
+            db.ref('transactions/' + currentEditTrxId).remove();
+          }
+
+          closeModal('edit-trx-modal');
+          renderHistory();
+          renderProducts();
+          if(typeof initChart === 'function') initChart();
+          customAlert("Transaksi berhasil dihapus karena item kosong.", "Dihapus", "success");
+        });
+        return;
+      }
+
+      // Skenario Simpan Normal: 1. Penyesuaian Stok
+      let updatedProducts = [...products];
+      
+      // Kembalikan stok lama dulu ke sistem
+      origTrx.items.forEach(oldItem => {
+        let p = updatedProducts.find(p => p.id === oldItem.id);
+        if(p) p.stock += oldItem.qty;
+      });
+      // Potong stok dengan jumlah barang yang baru diedit
+      currentEditTrxData.items.forEach(newItem => {
+        let p = updatedProducts.find(p => p.id === newItem.id);
+        if(p) p.stock -= newItem.qty;
+      });
+
+      products = updatedProducts;
+      localStorage.setItem('warhome_products', JSON.stringify(products));
+      if (useFirebase && db && navigator.onLine) {
+        db.ref('products').set(products);
+      }
+
+      // 2. Simpan Transaksi yang Telah Direvisi
+      transactions[origTrxIndex] = currentEditTrxData;
+      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
+      if (useFirebase && db && navigator.onLine) {
+        db.ref('transactions/' + currentEditTrxData.id).set(currentEditTrxData);
+      }
+
+      closeModal('edit-trx-modal');
       renderHistory();
+      renderProducts(); // Refresh tampilan stok kasir
+      checkSession();
       if(typeof initChart === 'function') initChart();
-      customAlert(`Data Laba Bersih untuk transaksi ${trx.id} berhasil diperbarui!`, "Tersimpan", "success");
+      
+      customAlert("Perubahan transaksi berhasil disimpan dan stok otomatis disesuaikan.", "Berhasil", "success");
     }
 
     function requestDeleteTransaction(trxId) {
@@ -1192,7 +1332,6 @@
       } else if (period === 'weekly') {
         for (let i = 3; i >= 0; i--) {
           labels.push(`Minggu -${i}`);
-          // (Simplified weekly grouping logic)
           revenueData.push(0); profitData.push(0); costData.push(0);
         }
       } else if (period === 'monthly') {
