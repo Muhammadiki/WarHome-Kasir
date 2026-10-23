@@ -111,10 +111,12 @@
           <button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700 font-medium">Reset</button>
         </div>
         
-        <!-- Input Nama Pelanggan -->
+        <!-- Input Nama Pelanggan Wajib (Required) -->
         <div class="px-4 pt-3 bg-gray-50">
-          <label class="text-[11px] font-bold text-gray-600 block mb-1"><i class="fas fa-user mr-1 text-amber-700"></i> Nama Pelanggan / Meja</label>
-          <input type="text" id="customer-name-input" placeholder="Contoh: Bpk. Budi / Meja 05" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">
+            <i class="fas fa-user mr-1 text-amber-700"></i> Nama Pelanggan / Meja <span class="text-red-500">*wajib</span>
+          </label>
+          <input type="text" id="customer-name-input" required placeholder="Contoh: Bpk. Budi / Meja 05" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
         </div>
 
         <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-3 divide-y divide-gray-100"></div>
@@ -366,8 +368,8 @@
       
       <!-- Input Edit Nama Pelanggan -->
       <div class="mb-3">
-        <label class="text-xs font-semibold text-gray-600 block mb-1">Nama Pelanggan / Meja</label>
-        <input type="text" id="edit-customer-name-input" oninput="updateEditCustomerName(this.value)" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Nama Pelanggan / Meja <span class="text-red-500">*wajib</span></label>
+        <input type="text" id="edit-customer-name-input" required oninput="updateEditCustomerName(this.value)" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
       </div>
 
       <p class="text-xs text-gray-500 mb-2">Ubah jumlah, harga jual, HPP, atau hapus item. Stok akan disesuaikan otomatis ke sistem.</p>
@@ -412,7 +414,7 @@
         </div>
         <div class="space-y-0.5 text-[11px]">
           <div class="flex justify-between"><span>No: <span id="rec-id">TRX-000</span></span><span id="rec-date">00/00/0000</span></div>
-          <div>Pelanggan: <span id="rec-customer" class="font-bold">Umum</span></div>
+          <div>Pelanggan: <span id="rec-customer" class="font-bold"></span></div>
           <div>Kasir: Operator Warhome</div>
         </div>
         <div class="border-b border-dashed border-black"></div>
@@ -1017,7 +1019,13 @@
       if (!session) return openOpenSessionModal();
 
       const customerNameInput = document.getElementById('customer-name-input');
-      const customerName = customerNameInput && customerNameInput.value.trim() !== '' ? customerNameInput.value.trim() : 'Umum';
+      const customerName = customerNameInput ? customerNameInput.value.trim() : '';
+
+      // Validasi wajib isi nama pelanggan / meja
+      if (!customerName) {
+        customerNameInput.focus();
+        return customAlert("Nama Pelanggan atau Nomor Meja wajib diisi sebelum menyelesaikan pesanan!", "Validasi Gagal", "warning");
+      }
 
       const totalHpp = cart.reduce((sum, item) => sum + ((item.hpp || 0) * item.qty), 0);
       const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
@@ -1065,7 +1073,7 @@
       currentActiveTransaction = trx;
       document.getElementById('rec-id').innerText = trx.id;
       document.getElementById('rec-date').innerText = new Date(trx.date).toLocaleDateString('id-ID') + ' ' + new Date(trx.date).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-      document.getElementById('rec-customer').innerText = trx.customerName || 'Umum';
+      document.getElementById('rec-customer').innerText = trx.customerName || '-';
       
       document.getElementById('rec-items').innerHTML = trx.items.map(item => `
         <div>
@@ -1150,7 +1158,7 @@
       receiptText += DIVIDER;
       receiptText += `No  : ${trx.id}\n`;
       receiptText += `Tgl : ${new Date(trx.date).toLocaleDateString('id-ID')} ${new Date(trx.date).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}\n`;
-      receiptText += `Pelanggan: ${trx.customerName || 'Umum'}\n`;
+      receiptText += `Pelanggan: ${trx.customerName || '-'}\n`;
       receiptText += DIVIDER;
 
       trx.items.forEach(item => {
@@ -1243,7 +1251,7 @@
         return `
           <tr class="hover:bg-gray-50 transition">
             <td class="p-3 font-bold text-xs">${t.id}</td>
-            <td class="p-3 text-xs font-semibold text-gray-800">${t.customerName || 'Umum'}</td>
+            <td class="p-3 text-xs font-semibold text-gray-800">${t.customerName || '-'}</td>
             <td class="p-3 text-xs text-gray-500">${new Date(t.date).toLocaleString('id-ID')}</td>
             <td class="p-3 text-xs leading-tight">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
             <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.subtotal)}</td>
@@ -1271,14 +1279,14 @@
       currentEditTrxData = JSON.parse(JSON.stringify(trx));
       
       document.getElementById('edit-trx-id').innerText = trxId;
-      document.getElementById('edit-customer-name-input').value = trx.customerName || 'Umum';
+      document.getElementById('edit-customer-name-input').value = trx.customerName || '';
       renderEditTrxModal();
       document.getElementById('edit-trx-modal').classList.remove('hidden');
     }
 
     function updateEditCustomerName(val) {
       if (currentEditTrxData) {
-        currentEditTrxData.customerName = val.trim() !== '' ? val.trim() : 'Umum';
+        currentEditTrxData.customerName = val.trim();
       }
     }
 
@@ -1350,6 +1358,11 @@
       const origTrxIndex = transactions.findIndex(t => t.id === currentEditTrxId);
       if(origTrxIndex === -1) return;
       const origTrx = transactions[origTrxIndex];
+
+      if (!currentEditTrxData.customerName || currentEditTrxData.customerName.trim() === '') {
+        document.getElementById('edit-customer-name-input').focus();
+        return customAlert("Nama Pelanggan wajib diisi!", "Validasi Gagal", "warning");
+      }
 
       if(currentEditTrxData.items.length === 0) {
         customConfirm("Semua item dihapus. Menyimpan akan menghapus total transaksi ini. Lanjutkan?", () => {
