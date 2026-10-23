@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WARHOME POS - Sistem Kasir Cloud & Dual Thermal Printer</title>
+  
+  <!-- CSS & Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Firebase SDK (v9 Compat) -->
@@ -13,6 +17,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
   <style>
+    /* Styling Khusus untuk Print Thermal */
     @media print {
       body * { visibility: hidden; }
       #receipt-modal-content, #receipt-modal-content * { visibility: visible; }
@@ -34,6 +39,7 @@
       }
     }
     
+    /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
@@ -41,13 +47,13 @@
     .scrollbar-hide::-webkit-scrollbar { display: none; }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
 
-  <!-- HEADER NAVBAR TUNGGAL TERPADU -->
+  <!-- HEADER NAVBAR -->
   <header class="bg-amber-800 text-white shadow-md sticky top-0 z-20 no-print">
     <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-3">
       
-      <!-- Brand & Status Koneksi -->
+      <!-- Brand & Lokasi -->
       <div class="flex items-center space-x-3">
         <div class="bg-amber-900 p-2 rounded-full text-amber-200">
           <i class="fas fa-store text-lg"></i>
@@ -63,56 +69,58 @@
         </div>
       </div>
 
-      <!-- Informasi Sesi Kasir & Navigasi Utama -->
+      <!-- Sesi Kasir & Navigasi -->
       <div class="flex flex-wrap items-center gap-3">
         <div id="session-info-text" class="text-xs text-amber-100 bg-amber-900/60 px-3 py-1.5 rounded-lg flex items-center gap-2"></div>
         <div id="session-action-btn"></div>
 
-        <nav class="flex space-x-1 border-l border-amber-700/60 pl-3">
-          <button onclick="switchTab('pos')" id="tab-pos" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition">
+        <nav class="flex space-x-1 border-l border-amber-700/60 pl-3 overflow-x-auto">
+          <button onclick="switchTab('pos')" id="tab-pos" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition whitespace-nowrap">
             <i class="fas fa-cash-register mr-1"></i> Kasir
           </button>
-          <button onclick="switchTab('history')" id="tab-history" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition">
+          <button onclick="switchTab('history')" id="tab-history" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition whitespace-nowrap">
             <i class="fas fa-chart-line mr-1"></i> Riwayat
           </button>
-          <button onclick="switchTab('shift-history')" id="tab-shift-history" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition">
-            <i class="fas fa-clock-rotate-left mr-1"></i> Buka/Tutup Kasir
+          <button onclick="switchTab('shift-history')" id="tab-shift-history" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition whitespace-nowrap">
+            <i class="fas fa-clock-rotate-left mr-1"></i> Shift Kasir
           </button>
-          <button onclick="switchTab('products')" id="tab-products" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition">
+          <button onclick="switchTab('products')" id="tab-products" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition whitespace-nowrap">
             <i class="fas fa-utensils mr-1"></i> Menu
           </button>
         </nav>
       </div>
-
     </div>
   </header>
 
   <!-- KONTEN UTAMA -->
-  <main class="max-w-7xl mx-auto p-4 flex-1 w-full">
+  <main class="max-w-7xl mx-auto p-4 flex-1 w-full min-h-0 flex flex-col">
     
     <!-- TAB 1: KASIR (POS) -->
-    <div id="view-pos" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 flex flex-col space-y-4">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row gap-3 justify-between items-center">
+    <div id="view-pos" class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0">
+      
+      <!-- Sisi Kiri: Katalog Produk -->
+      <div class="lg:col-span-2 flex flex-col space-y-4 min-h-0">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row gap-3 justify-between items-center shrink-0">
           <div class="relative w-full sm:w-64">
             <input type="text" id="search-input" oninput="renderProducts()" placeholder="Cari menu..." class="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
             <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
           </div>
           <div class="flex space-x-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide" id="category-filters"></div>
         </div>
-        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto max-h-[calc(100vh-250px)] p-1"></div>
+        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto flex-1 p-1 content-start pb-6"></div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-180px)] sticky top-20">
-        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+      <!-- Sisi Kanan: Keranjang Pesanan -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-full min-h-0">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl shrink-0">
           <h2 class="font-bold text-gray-700 flex items-center text-base">
-            <i class="fas fa-shopping-cart text-amber-700 mr-2"></i> Keranjang Pesanan
+            <i class="fas fa-shopping-cart text-amber-700 mr-2"></i> Keranjang
           </h2>
           <button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700 font-medium">Reset</button>
         </div>
         
         <!-- Input Nama Pelanggan Wajib (Required) -->
-        <div class="px-4 pt-3 bg-gray-50">
+        <div class="px-4 pt-3 bg-gray-50 shrink-0">
           <label class="text-[11px] font-bold text-gray-600 block mb-1">
             <i class="fas fa-user mr-1 text-amber-700"></i> Nama Pelanggan / Meja <span class="text-red-500">*wajib</span>
           </label>
@@ -121,7 +129,7 @@
 
         <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-3 divide-y divide-gray-100"></div>
         
-        <div class="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl space-y-3">
+        <div class="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl space-y-3 shrink-0">
           <div class="space-y-1.5 text-sm">
             <div class="flex justify-between text-gray-500"><span>Subtotal (Omset)</span><span id="cart-subtotal">Rp 0</span></div>
             <div class="flex justify-between text-gray-500"><span>PPN (11%)</span><span id="cart-tax">Rp 0</span></div>
@@ -134,13 +142,12 @@
       </div>
     </div>
 
-    <!-- TAB 2: RIWAYAT & GRAFIK TRANSAKSI -->
-    <div id="view-history" class="hidden space-y-6">
+    <!-- TAB 2: RIWAYAT TRANSAKSI & GRAFIK -->
+    <div id="view-history" class="hidden space-y-6 h-full overflow-y-auto pb-10 pr-2">
       
-      <!-- GRID GRAFIK (SALES & MENU TERLARIS) -->
+      <!-- Baris Grafik -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        <!-- CARD GRAFIK SALES & PROFIT -->
+        <!-- Grafik Penjualan (Omset/Laba) -->
         <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 flex flex-col">
           <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 border-b pb-3">
             <div>
@@ -166,16 +173,16 @@
           <div class="relative flex-1 min-h-[250px]"><canvas id="salesChart"></canvas></div>
         </div>
 
-        <!-- CARD GRAFIK MENU TERLARIS -->
+        <!-- Grafik Menu Terlaris -->
         <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 flex flex-col">
           <div class="border-b pb-3 flex justify-between items-start gap-2">
             <div>
               <h2 class="font-bold text-lg text-gray-800 flex items-center">
                 <i class="fas fa-fire text-orange-600 mr-2"></i> Menu Terlaris (Top 10)
               </h2>
-              <p class="text-[10px] text-gray-500">Diambil dari filter tabel Riwayat Transaksi.</p>
+              <p class="text-[10px] text-gray-500">Berdasarkan filter tanggal di bawah.</p>
             </div>
-            <!-- Filter Kategori untuk Grafik Menu Terlaris -->
+            <!-- Filter Kategori khusus Grafik Terlaris -->
             <select id="filter-top-category" onchange="updateTopItemsCategory(this.value)" class="border border-gray-300 rounded-lg text-xs px-2 py-1.5 bg-gray-50 text-gray-700 outline-none shadow-sm cursor-pointer focus:ring-2 focus:ring-amber-500">
               <option value="All">Semua Kategori</option>
               <option value="Minuman">Minuman (☕)</option>
@@ -186,24 +193,22 @@
           </div>
           <div class="relative flex-1 min-h-[250px]"><canvas id="topItemsChart"></canvas></div>
         </div>
-
       </div>
 
-      <!-- CARD FILTER & TABEL RIWAYAT -->
+      <!-- Filter dan Tabel Riwayat -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
           <div>
-            <h2 class="font-bold text-lg text-gray-800 flex items-center"><i class="fas fa-history text-amber-700 mr-2"></i> Riwayat Transaksi</h2>
-            <p class="text-xs text-gray-500">Filter berdasarkan Hari spesifik, Bulan, atau Tahun serta kelola transaksi</p>
+            <h2 class="font-bold text-lg text-gray-800 flex items-center"><i class="fas fa-history text-amber-700 mr-2"></i> Data Transaksi</h2>
+            <p class="text-xs text-gray-500">Filter berdasarkan Hari, Bulan, atau Tahun</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <!-- Filter Tanggal Spesifik (Hari) -->
+            <!-- Filter Hari -->
             <div class="flex items-center gap-1 bg-gray-50 border rounded-lg px-2 py-1">
               <span class="text-[11px] text-gray-500 font-semibold">Hari:</span>
               <input type="date" id="filter-date" onchange="renderHistory()" class="text-xs bg-transparent focus:outline-none">
               <button onclick="clearDateFilter()" title="Reset Tanggal" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fas fa-times"></i></button>
             </div>
-
             <!-- Filter Bulan -->
             <select id="filter-month" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
               <option value="all">Semua Bulan</option>
@@ -212,12 +217,11 @@
               <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
               <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
             </select>
-
             <!-- Filter Tahun -->
             <select id="filter-year" onchange="renderHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
 
             <button onclick="window.print()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow">
-              <i class="fas fa-print mr-1.5"></i> Cetak
+              <i class="fas fa-print mr-1.5"></i> Cetak Laporan
             </button>
           </div>
         </div>
@@ -239,7 +243,7 @@
                 <th class="p-3">Waktu</th>
                 <th class="p-3">Rincian Item</th>
                 <th class="p-3 text-right">Total Omset</th>
-                <th class="p-3 text-right text-emerald-700">Laba Bersih</th>
+                <th class="p-3 text-right text-emerald-700">Laba</th>
                 <th class="p-3 text-center">Aksi</th>
               </tr>
             </thead>
@@ -249,14 +253,14 @@
       </div>
     </div>
 
-    <!-- TAB 3: RIWAYAT BUKA TUTUP KASIR (SHIFT HISTORY) -->
-    <div id="view-shift-history" class="hidden space-y-6">
+    <!-- TAB 3: RIWAYAT SHIFT KASIR -->
+    <div id="view-shift-history" class="hidden space-y-6 h-full overflow-y-auto pb-10 pr-2">
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 class="font-bold text-lg text-gray-800 flex items-center">
-            <i class="fas fa-clock-rotate-left text-amber-700 mr-2"></i> Riwayat Buka & Tutup Kasir (Shift History)
+            <i class="fas fa-clock-rotate-left text-amber-700 mr-2"></i> Riwayat Shift Kasir
           </h2>
-          <p class="text-xs text-gray-500">Arsip lengkap pembukaan shift kasir, modal, total penjualan, kas aktual, dan analisis selisih</p>
+          <p class="text-xs text-gray-500">Arsip pembukaan shift, modal, total penjualan, dan selisih kas aktual</p>
         </div>
         <div class="flex items-center gap-2">
           <button onclick="renderShiftHistory()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow-sm">
@@ -302,7 +306,7 @@
     </div>
 
     <!-- TAB 4: KELOLA MENU -->
-    <div id="view-products" class="hidden space-y-6">
+    <div id="view-products" class="hidden space-y-6 h-full overflow-y-auto pb-10 pr-2">
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div><h2 class="font-bold text-lg text-gray-800">Kelola Menu</h2><p class="text-xs text-gray-500">Tambah, edit HPP, atau hapus menu Warhome</p></div>
         <button onclick="openProductModal()" class="bg-amber-700 hover:bg-amber-800 text-white text-sm px-4 py-2 rounded-lg font-semibold shadow flex items-center"><i class="fas fa-plus mr-2"></i> Tambah Menu Baru</button>
@@ -326,11 +330,13 @@
     </div>
   </main>
 
-  <!-- MODAL PEMILIHAN METODE PEMBAYARAN -->
+  <!-- ======================= MODALS ======================= -->
+
+  <!-- Modal Pilih Metode Pembayaran -->
   <div id="payment-method-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="font-bold text-base text-gray-800"><i class="fas fa-wallet text-amber-700 mr-2"></i> Pilih Metode Pembayaran</h3>
+        <h3 class="font-bold text-base text-gray-800"><i class="fas fa-wallet text-amber-700 mr-2"></i> Pilih Pembayaran</h3>
         <button onclick="closeModal('payment-method-modal')" class="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
       </div>
       <div class="space-y-3 pt-1">
@@ -359,7 +365,7 @@
     </div>
   </div>
 
-  <!-- MODAL PEMBAYARAN QRIS / KASIR -->
+  <!-- Modal Pembayaran QRIS Simulation -->
   <div id="qris-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
@@ -373,7 +379,7 @@
       
       <!-- Placeholder Gambar QR Code QRIS -->
       <div class="bg-white border-2 border-dashed border-gray-300 p-3 rounded-xl inline-block shadow-inner">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=WARHOME_POS_PAYMENT_QRIS_SIMULATION" alt="QRIS QR Code" class="w-44 h-44 mx-auto rounded">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=WARHOME_POS_PAYMENT_QRIS" alt="QRIS QR Code" class="w-44 h-44 mx-auto rounded">
         <div class="mt-2 text-[10px] text-gray-500 font-bold uppercase tracking-wider">NMID: ID1029384756382</div>
       </div>
 
@@ -392,7 +398,7 @@
     </div>
   </div>
 
-  <!-- CUSTOM ALERT MODAL -->
+  <!-- Modal Alert & Confirm -->
   <div id="alert-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-xs w-full p-6 shadow-2xl text-center space-y-4">
       <div id="alert-icon" class="text-4xl text-amber-600"><i class="fas fa-info-circle"></i></div>
@@ -401,8 +407,6 @@
       <button onclick="closeModal('alert-modal')" class="w-full py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-bold rounded-lg shadow mt-2">OK, Mengerti</button>
     </div>
   </div>
-
-  <!-- CUSTOM CONFIRM MODAL -->
   <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center space-x-3 text-amber-600">
@@ -417,7 +421,7 @@
     </div>
   </div>
 
-  <!-- MODAL BUKA KASIR -->
+  <!-- Modal Buka / Tutup Sesi Kasir -->
   <div id="open-session-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
       <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">🚪 Buka Sesi Kasir</h3>
@@ -434,8 +438,6 @@
       </div>
     </div>
   </div>
-
-  <!-- MODAL TUTUP KASIR -->
   <div id="close-session-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
       <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">🔒 Tutup Sesi Kasir</h3>
@@ -443,86 +445,67 @@
     </div>
   </div>
 
-  <!-- MODAL KONFIRMASI HAPUS DENGAN PIN -->
+  <!-- Modal Hapus / Edit Transaksi -->
   <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-      <div class="flex items-center space-x-3 text-red-600">
-        <i class="fas fa-exclamation-triangle text-2xl"></i>
-        <h3 class="font-bold text-base text-gray-800">Konfirmasi Hapus Transaksi</h3>
-      </div>
-      <p class="text-xs text-gray-600">
-        Data transaksi <span id="delete-trx-id" class="font-bold text-gray-800"></span> akan dihapus permanen. Masukkan PIN keamanan untuk melanjutkan.
-      </p>
+      <div class="flex items-center space-x-3 text-red-600"><i class="fas fa-exclamation-triangle text-2xl"></i><h3 class="font-bold text-base text-gray-800">Hapus Transaksi</h3></div>
+      <p class="text-xs text-gray-600">Data <span id="delete-trx-id" class="font-bold text-gray-800"></span> dihapus permanen. Masukkan PIN.</p>
       <div>
-        <label class="text-xs font-semibold text-gray-600">PIN Keamanan (Default: 1234)</label>
-        <input type="password" id="delete-pin-input" maxlength="6" placeholder="Masukkan PIN" class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none tracking-widest text-center font-bold">
-        <p id="delete-pin-error" class="text-[11px] text-red-600 mt-1 hidden"><i class="fas fa-times-circle mr-1"></i> PIN salah! Akses ditolak.</p>
+        <input type="password" id="delete-pin-input" maxlength="6" placeholder="PIN: 1234" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none text-center font-bold tracking-widest">
+        <p id="delete-pin-error" class="text-[11px] text-red-600 mt-1 hidden">PIN salah!</p>
       </div>
       <div class="flex justify-end gap-2 pt-2 border-t">
         <button type="button" onclick="closeModal('delete-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg">Batal</button>
-        <button type="button" onclick="confirmDeleteTransaction()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow">Hapus Permanen</button>
+        <button type="button" onclick="confirmDeleteTransaction()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow">Hapus</button>
       </div>
     </div>
   </div>
-
-  <!-- MODAL EDIT TRANSAKSI FULL -->
   <div id="edit-trx-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[95vh]">
       <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4 flex justify-between items-center">
         <span><i class="fas fa-edit text-blue-600 mr-2"></i> Edit Transaksi</span>
         <span id="edit-trx-id" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"></span>
       </h3>
-      
       <div class="mb-3">
-        <label class="text-xs font-semibold text-gray-600 block mb-1">Nama Pelanggan / Meja <span class="text-red-500">*wajib</span></label>
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Nama Pelanggan / Meja <span class="text-red-500">*</span></label>
         <input type="text" id="edit-customer-name-input" required oninput="updateEditCustomerName(this.value)" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
       </div>
-
-      <p class="text-xs text-gray-500 mb-2">Ubah jumlah, harga jual, HPP, atau hapus item. Stok akan disesuaikan otomatis ke sistem.</p>
-      
       <div id="edit-trx-items-container" class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1 scrollbar-hide"></div>
-
       <div class="border-t pt-3 space-y-1.5 text-sm mb-4">
         <div class="flex justify-between text-gray-500"><span>Subtotal (Omset)</span><span id="edit-trx-subtotal">Rp 0</span></div>
-        <div class="flex justify-between text-gray-500"><span>Total HPP (Modal)</span><span id="edit-trx-hpp">Rp 0</span></div>
         <div class="flex justify-between text-emerald-600 font-bold"><span>Laba Bersih</span><span id="edit-trx-profit">Rp 0</span></div>
-        <div class="flex justify-between text-gray-500"><span>PPN (11%)</span><span id="edit-trx-tax">Rp 0</span></div>
         <div class="flex justify-between font-bold text-lg text-gray-800 border-t pt-1"><span>Total Bayar</span><span id="edit-trx-total">Rp 0</span></div>
       </div>
-
       <div class="flex justify-end gap-2 pt-3 border-t">
         <button type="button" onclick="closeModal('edit-trx-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
-        <button type="button" onclick="saveEditedTrx()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow">Simpan Perubahan</button>
+        <button type="button" onclick="saveEditedTrx()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow">Simpan</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL RESI DUAL SIZE (58mm / 80mm) -->
+  <!-- Modal Resi (Receipt) -->
   <div id="receipt-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div id="receipt-modal-card" class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200">
       <button onclick="closeModal('receipt-modal')" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl no-print">&times;</button>
-
       <div class="mb-3 flex items-center justify-between border-b pb-2 no-print">
-        <span class="text-xs font-semibold text-gray-600"><i class="fas fa-scroll mr-1"></i> Ukuran Kertas:</span>
+        <span class="text-xs font-semibold text-gray-600"><i class="fas fa-scroll mr-1"></i> Ukuran:</span>
         <div class="flex bg-gray-100 p-0.5 rounded-lg text-xs font-bold">
           <button onclick="setPaperSize('58mm')" id="btn-paper-58" class="px-2.5 py-1 rounded-md bg-amber-800 text-white shadow-sm transition">58 mm</button>
           <button onclick="setPaperSize('80mm')" id="btn-paper-80" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900 transition">80 mm</button>
         </div>
       </div>
-
       <div id="receipt-modal-content" class="bg-white text-black p-2 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-58mm">
         <div class="text-center space-y-1">
           <div class="mx-auto w-10 h-10 bg-amber-800 text-white rounded-full flex items-center justify-center font-bold text-lg mb-1">W</div>
           <h2 class="font-bold text-base tracking-wider">WARHOME</h2>
-          <p class="text-[10px] leading-tight">Jalan Ahmad Yani Handel 2 Muara Jawa</p>
+          <p class="text-[10px] leading-tight">JL. A. Yani Handil 2</p>
           <p class="text-[10px]">Telp: 081229830017</p>
           <p class="border-b border-dashed border-black pt-1"></p>
         </div>
         <div class="space-y-0.5 text-[11px]">
           <div class="flex justify-between"><span>No: <span id="rec-id">TRX-000</span></span><span id="rec-date">00/00/0000</span></div>
           <div>Pelanggan: <span id="rec-customer" class="font-bold"></span></div>
-          <div>Pembayaran: <span id="rec-payment" class="font-bold">Cash</span></div>
-          <div>Kasir: Operator Warhome</div>
+          <div>Pembayaran: <span id="rec-payment" class="font-bold"></span></div>
         </div>
         <div class="border-b border-dashed border-black"></div>
         <div id="rec-items" class="space-y-1 text-[11px]"></div>
@@ -535,23 +518,16 @@
         <div class="border-b border-dashed border-black"></div>
         <div class="text-center text-[10px] space-y-0.5 pt-1">
           <p class="font-semibold">Terima Kasih Atas Kunjungan Anda!</p>
-          <p>WARHOME - Nikmati Suasana & Rasa</p>
         </div>
       </div>
-      
       <div class="mt-4 flex flex-col sm:flex-row gap-2 no-print">
-        <button onclick="window.print()" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow flex items-center justify-center space-x-1">
-          <i class="fas fa-print"></i><span>Cetak / PDF</span>
-        </button>
-        <button onclick="triggerBluetoothPrint()" class="flex-1 bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow flex items-center justify-center space-x-1">
-          <i class="fab fa-bluetooth-b"></i><span>Cetak BT Thermal</span>
-        </button>
-        <button onclick="closeModal('receipt-modal')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg text-xs">Tutup</button>
+        <button onclick="window.print()" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow"><i class="fas fa-print mr-1"></i>Cetak PDF</button>
+        <button onclick="triggerBluetoothPrint()" class="flex-1 bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow"><i class="fab fa-bluetooth-b mr-1"></i>Bluetooth</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL EDIT/TAMBAH MENU -->
+  <!-- Modal Tambah/Edit Menu (Produk) -->
   <div id="product-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
       <h3 id="product-modal-title" class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">Tambah Menu</h3>
@@ -568,10 +544,22 @@
           </select>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div><label class="text-xs font-semibold text-gray-600">HPP / Modal (Rp)</label><input type="number" id="prod-hpp" min="0" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"></div>
-          <div><label class="text-xs font-semibold text-gray-600">Harga Jual (Rp)</label><input type="number" id="prod-price" min="0" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"></div>
+          <div>
+            <label class="text-xs font-semibold text-gray-600 flex justify-between items-center mb-1">
+              <span>HPP / Modal (Rp)</span>
+              <button type="button" onclick="openHppCalculator()" class="text-[10px] text-blue-700 hover:text-blue-900 font-bold bg-blue-100 hover:bg-blue-200 px-2 py-0.5 rounded transition"><i class="fas fa-calculator mr-1"></i>Hitung HPP Resep</button>
+            </label>
+            <input type="number" id="prod-hpp" min="0" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-600 mb-1 block">Harga Jual (Rp)</label>
+            <input type="number" id="prod-price" min="0" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
         </div>
-        <div><label class="text-xs font-semibold text-gray-600">Stok Awal</label><input type="number" id="prod-stock" min="0" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"></div>
+        <div>
+          <label class="text-xs font-semibold text-gray-600 mb-1 block">Stok Awal</label>
+          <input type="number" id="prod-stock" min="0" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+        </div>
         <div class="flex justify-end space-x-2 pt-4 border-t">
           <button type="button" onclick="closeModal('product-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
           <button type="submit" class="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-semibold rounded-lg shadow">Simpan Menu</button>
@@ -580,8 +568,37 @@
     </div>
   </div>
 
+  <!-- MODAL KALKULATOR HPP (NEW) -->
+  <div id="hpp-calc-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center hidden p-4 no-print">
+    <div class="bg-white rounded-xl max-w-3xl w-full p-6 shadow-2xl flex flex-col max-h-[95vh]">
+      <div class="flex justify-between items-center border-b pb-2 mb-4">
+        <h3 class="font-bold text-lg text-gray-800"><i class="fas fa-calculator text-blue-600 mr-2"></i> Kalkulator HPP (Harga Pokok Penjualan)</h3>
+        <button onclick="closeModal('hpp-calc-modal')" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+      </div>
+      
+      <p class="text-xs text-gray-500 mb-3">Rincikan bahan baku untuk 1 porsi menu ini. Total biaya akan diakumulasikan sebagai HPP (Modal) produk.</p>
+
+      <!-- Container untuk Baris Bahan Baku -->
+      <div class="overflow-y-auto flex-1 mb-4 pr-1 space-y-2 scrollbar-hide" id="hpp-ingredients-container"></div>
+
+      <button type="button" onclick="addHppIngredientRow()" class="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg border border-dashed border-blue-300 mb-4 transition flex justify-center items-center">
+        <i class="fas fa-plus mr-1"></i> Tambah Bahan
+      </button>
+
+      <div class="border-t pt-3 flex justify-between items-center mb-4 bg-gray-50 p-3 rounded-lg border">
+        <span class="font-bold text-sm text-gray-700">Total HPP per Porsi:</span>
+        <span id="hpp-calc-total" class="font-bold text-xl text-red-600">Rp 0</span>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t">
+        <button type="button" onclick="closeModal('hpp-calc-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
+        <button type="button" onclick="applyHppToProduct()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow"><i class="fas fa-check mr-1"></i> Terapkan HPP</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Konfigurasi Firebase
+    // ================== FIREBASE INIT ==================
     const firebaseConfig = {
         apiKey: "AIzaSyCn3F3DA-_85PbVRSruM5_Xu-bHVwrlQSg",
         authDomain: "warhome-pos.firebaseapp.com",
@@ -591,24 +608,13 @@
         appId: "1:493124045860:web:f86f968572e1d02ecd5cb1",
         measurementId: "G-CMNPL2RHEN"
     };
-    
-    let db = null;
-    let useFirebase = false;
-    
+    let db = null, useFirebase = false;
     try {
-        if (firebaseConfig.apiKey && firebase.apps.length === 0) {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            useFirebase = true;
-        } else if (firebase.apps.length > 0) {
-            db = firebase.database();
-            useFirebase = true;
-        }
-    } catch (e) {
-        console.error("Gagal terhubung ke Firebase:", e);
-        useFirebase = false;
-    }
+        if (firebaseConfig.apiKey && firebase.apps.length === 0) { firebase.initializeApp(firebaseConfig); db = firebase.database(); useFirebase = true; }
+        else if (firebase.apps.length > 0) { db = firebase.database(); useFirebase = true; }
+    } catch (e) { console.error("Firebase err:", e); }
 
+    // ================== STATE MANAGEMENT ==================
     let products = JSON.parse(localStorage.getItem('warhome_products')) || [];
     let cart = [];
     let transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
@@ -616,1332 +622,500 @@
     let cashSessions = JSON.parse(localStorage.getItem('warhome_cash_sessions')) || [];
     
     let selectedCategory = 'All';
-    let topItemsCategoryFilter = 'All'; // State filter kategori grafik menu terlaris
-    let myChart = null;          // Untuk Grafik Penjualan & Profit
-    let topItemsChart = null;    // Untuk Grafik Menu Terlaris
-    let currentChartPeriod = 'daily';
-    let currentChartMetric = 'revenue';
+    let topItemsCategoryFilter = 'All'; 
+    let myChart = null, topItemsChart = null;    
+    let currentChartPeriod = 'daily', currentChartMetric = 'revenue';
     let currentActiveTransaction = null;
     let currentPaperSize = localStorage.getItem('warhome_paper_size') || '58mm';
     let qrisTimerInterval = null;
-    
-    let targetDeleteTrxId = null;
-    let currentEditTrxId = null;
-    let currentEditTrxData = null;
+    let targetDeleteTrxId = null, currentEditTrxId = null, currentEditTrxData = null;
     const SECURITY_PIN = "1234";
 
     const PRINTER_SERVICE_UUID = '00001101-0000-1000-8000-00805f9b34fb';
-    let bluetoothDevice = null;
-    let printerCharacteristic = null;
+    let bluetoothDevice = null, printerCharacteristic = null;
 
-    const categoryIcons = {
-      'Minuman': '<i class="fas fa-mug-hot text-amber-700"></i>',
-      'Minuman Dingin': '<i class="fas fa-snowflake text-blue-500"></i>',
-      'Makanan': '<i class="fas fa-utensils text-orange-600"></i>',
-      'Snack': '<i class="fas fa-cookie-bite text-yellow-600"></i>'
-    };
+    const categoryIcons = { 'Minuman': '<i class="fas fa-mug-hot text-amber-700"></i>', 'Minuman Dingin': '<i class="fas fa-snowflake text-blue-500"></i>', 'Makanan': '<i class="fas fa-utensils text-orange-600"></i>', 'Snack': '<i class="fas fa-cookie-bite text-yellow-600"></i>' };
 
-    function customAlert(message, title = "Perhatian", type = "info") {
-      document.getElementById('alert-title').innerText = title;
-      document.getElementById('alert-message').innerText = message;
-      
-      const iconEl = document.getElementById('alert-icon');
-      if (type === 'error') {
-        iconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
-        iconEl.className = "text-4xl text-red-600";
-      } else if (type === 'success') {
-        iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
-        iconEl.className = "text-4xl text-green-600";
-      } else {
-        iconEl.innerHTML = '<i class="fas fa-info-circle"></i>';
-        iconEl.className = "text-4xl text-amber-600";
-      }
-      
+    // ================== UTILS ==================
+    function formatRp(num) { return 'Rp ' + Number(num || 0).toLocaleString('id-ID'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function customAlert(msg, title = "Perhatian", type = "info") {
+      document.getElementById('alert-title').innerText = title; document.getElementById('alert-message').innerText = msg;
+      const icon = document.getElementById('alert-icon');
+      icon.innerHTML = type === 'error' ? '<i class="fas fa-times-circle"></i>' : (type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-info-circle"></i>');
+      icon.className = type === 'error' ? "text-4xl text-red-600" : (type === 'success' ? "text-4xl text-green-600" : "text-4xl text-amber-600");
       document.getElementById('alert-modal').classList.remove('hidden');
     }
-
-    function customConfirm(message, onConfirm, title = "Konfirmasi") {
-      document.getElementById('confirm-title').innerText = title;
-      document.getElementById('confirm-message').innerText = message;
-      
-      const btn = document.getElementById('confirm-action-btn');
-      btn.onclick = function() {
-        closeModal('confirm-modal');
-        if(typeof onConfirm === 'function') onConfirm();
-      };
-      
+    function customConfirm(msg, onConfirm) {
+      document.getElementById('confirm-message').innerText = msg;
+      document.getElementById('confirm-action-btn').onclick = () => { closeModal('confirm-modal'); if(onConfirm) onConfirm(); };
       document.getElementById('confirm-modal').classList.remove('hidden');
     }
 
-    function formatRp(num) {
-      return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).classList.add('hidden');
-    }
-
-    function setPaperSize(size) {
-      currentPaperSize = size;
-      localStorage.setItem('warhome_paper_size', size);
-
-      const btn58 = document.getElementById('btn-paper-58');
-      const btn80 = document.getElementById('btn-paper-80');
-      const modalContent = document.getElementById('receipt-modal-content');
-      const modalCard = document.getElementById('receipt-modal-card');
-
-      if (size === '80mm') {
-        btn80.className = "px-2.5 py-1 rounded-md bg-amber-800 text-white shadow-sm transition";
-        btn58.className = "px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900 transition";
-        modalContent.className = "bg-white text-black p-3 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-80mm";
-        modalCard.className = "bg-white rounded-xl max-w-md w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200";
-      } else {
-        btn58.className = "px-2.5 py-1 rounded-md bg-amber-800 text-white shadow-sm transition";
-        btn80.className = "px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900 transition";
-        modalContent.className = "bg-white text-black p-2 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-58mm";
-        modalCard.className = "bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200";
-      }
-    }
-
+    // ================== INIT & SYNC ==================
     function updateCloudBadge() {
-        const badge = document.getElementById('cloud-badge');
-        if (!badge) return;
-        
-        if (useFirebase && navigator.onLine) {
-            badge.className = "bg-emerald-800 text-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
-            badge.innerText = "Online Mode";
-        } else {
-            badge.className = "bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-normal transition-all";
-            badge.innerText = "Local Mode";
-        }
+        const b = document.getElementById('cloud-badge'); if(!b) return;
+        if(useFirebase && navigator.onLine) { b.className = "bg-emerald-800 text-emerald-200 text-[10px] px-2 py-0.5 rounded-full"; b.innerText = "Online Mode"; }
+        else { b.className = "bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded-full"; b.innerText = "Local Mode"; }
     }
-
     function syncLocalDataToCloud() {
-        if (!useFirebase || !navigator.onLine) return;
-        
+        if(!useFirebase || !navigator.onLine) return;
         const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
-        if (localTrx.length > 0) {
-            firebase.database().ref('transactions').once('value').then(snapshot => {
-                const cloudData = snapshot.val() || {};
-                localTrx.forEach(trx => {
-                    if (!cloudData[trx.id]) {
-                        firebase.database().ref('transactions/' + trx.id).set(trx);
-                    }
-                });
+        if(localTrx.length > 0) {
+            db.ref('transactions').once('value').then(snap => {
+                const cloudData = snap.val() || {};
+                localTrx.forEach(t => { if(!cloudData[t.id]) db.ref('transactions/'+t.id).set(t); });
                 localStorage.removeItem('warhome_transactions');
             });
         }
-
-        const localSessions = JSON.parse(localStorage.getItem('warhome_cash_sessions')) || [];
-        if (localSessions.length > 0) {
-            firebase.database().ref('cash_sessions').once('value').then(snapshot => {
-                const cloudData = snapshot.val() || {};
-                localSessions.forEach(cs => {
-                    if (!cloudData[cs.id]) {
-                        firebase.database().ref('cash_sessions/' + cs.id).set(cs);
-                    }
-                });
+        const localCS = JSON.parse(localStorage.getItem('warhome_cash_sessions')) || [];
+        if(localCS.length > 0) {
+            db.ref('cash_sessions').once('value').then(snap => {
+                const cloudData = snap.val() || {};
+                localCS.forEach(cs => { if(!cloudData[cs.id]) db.ref('cash_sessions/'+cs.id).set(cs); });
                 localStorage.removeItem('warhome_cash_sessions');
             });
         }
         updateCloudBadge();
     }
-
     window.addEventListener('online', () => { syncLocalDataToCloud(); updateCloudBadge(); });
-    window.addEventListener('offline', () => updateCloudBadge());
-
+    window.addEventListener('offline', updateCloudBadge);
     window.addEventListener('DOMContentLoaded', () => {
-        updateCloudBadge();
-        setPaperSize(currentPaperSize);
-        checkSession();
-        renderProducts();
-        renderCart();
-        populateYearFilter();
-        if (useFirebase && db) {
-            setupRealtimeListeners();
-            syncLocalDataToCloud();
+        updateCloudBadge(); setPaperSize(currentPaperSize); checkSession(); renderProducts(); renderCart(); populateYearFilter(); renderCategoryFilters();
+        if(useFirebase && db) {
+            db.ref('.info/connected').on('value', s => { if(s.val()===true) syncLocalDataToCloud(); updateCloudBadge(); });
+            db.ref('products').on('value', s => { products = s.val() ? Object.values(s.val()).filter(Boolean) : []; localStorage.setItem('warhome_products', JSON.stringify(products)); renderProducts(); if(!document.getElementById('view-products').classList.contains('hidden')) renderProductTable(); });
+            db.ref('transactions').on('value', s => { transactions = s.val() ? Object.values(s.val()).sort((a,b)=>new Date(b.date)-new Date(a.date)) : []; checkSession(); if(!document.getElementById('view-history').classList.contains('hidden')){ renderHistory(); initChart(); } });
+            db.ref('session').on('value', s => { session = s.val(); if(session) localStorage.setItem('warhome_session', JSON.stringify(session)); else localStorage.removeItem('warhome_session'); checkSession(); });
+            db.ref('cash_sessions').on('value', s => { cashSessions = s.val() ? Object.values(s.val()).sort((a,b)=>new Date(b.startTime)-new Date(a.startTime)).reverse() : []; localStorage.setItem('warhome_cash_sessions', JSON.stringify(cashSessions)); if(!document.getElementById('view-shift-history').classList.contains('hidden')) renderShiftHistory(); });
         }
-        renderCategoryFilters();
     });
 
-    function setupRealtimeListeners() {
-      db.ref('.info/connected').on('value', (snap) => {
-        if (snap.val() === true) {
-          syncLocalDataToCloud();
-          updateCloudBadge();
-        } else {
-          updateCloudBadge();
-        }
-      });
-
-      db.ref('products').on('value', (snapshot) => {
-        const val = snapshot.val();
-        products = val ? (Array.isArray(val) ? val.filter(Boolean) : Object.values(val)) : [];
-        localStorage.setItem('warhome_products', JSON.stringify(products));
-        renderProducts();
-        if (!document.getElementById('view-products').classList.contains('hidden')) {
-          renderProductTable();
-        }
-      });
-
-      db.ref('transactions').on('value', (snapshot) => {
-        const val = snapshot.val();
-        transactions = val ? Object.values(val).sort((a, b) => new Date(b.date) - new Date(a.date)) : [];
-        checkSession();
-        if (!document.getElementById('view-history').classList.contains('hidden')) {
-          renderHistory();
-          initChart();
-        }
-      });
-
-      db.ref('session').on('value', (snapshot) => {
-        session = snapshot.val();
-        if (session) localStorage.setItem('warhome_session', JSON.stringify(session));
-        else localStorage.removeItem('warhome_session');
-        checkSession();
-      });
-
-      db.ref('cash_sessions').on('value', (snapshot) => {
-        const val = snapshot.val();
-        cashSessions = val ? Object.values(val).sort((a, b) => new Date(b.closeTime || b.startTime) - new Date(a.closeTime || a.startTime)) : [];
-        localStorage.setItem('warhome_cash_sessions', JSON.stringify(cashSessions));
-        if (!document.getElementById('view-shift-history').classList.contains('hidden')) {
-          renderShiftHistory();
-        }
-      });
-    }
-
+    // ================== TABS ==================
     function switchTab(tab) {
-      document.getElementById('view-pos').classList.add('hidden');
-      document.getElementById('view-history').classList.add('hidden');
-      document.getElementById('view-shift-history').classList.add('hidden');
-      document.getElementById('view-products').classList.add('hidden');
-
-      document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
-      document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
-      document.getElementById('tab-shift-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
-      document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
-
-      if(tab === 'pos') {
-        document.getElementById('view-pos').classList.remove('hidden');
-        document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition cursor-pointer";
-        renderProducts();
-      } else if(tab === 'history') {
-        document.getElementById('view-history').classList.remove('hidden');
-        document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition cursor-pointer";
-        populateYearFilter();
-        renderHistory();
-        initChart();
-      } else if(tab === 'shift-history') {
-        document.getElementById('view-shift-history').classList.remove('hidden');
-        document.getElementById('tab-shift-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition cursor-pointer";
-        renderShiftHistory();
-      } else if(tab === 'products') {
-        document.getElementById('view-products').classList.remove('hidden');
-        document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition cursor-pointer";
-        renderProductTable();
-      }
+      ['pos','history','shift-history','products'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        document.getElementById(`tab-${t}`).className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition whitespace-nowrap cursor-pointer";
+      });
+      document.getElementById(`view-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-${tab}`).className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition whitespace-nowrap cursor-pointer";
+      
+      if(tab === 'pos') renderProducts();
+      else if(tab === 'history') { populateYearFilter(); renderHistory(); initChart(); }
+      else if(tab === 'shift-history') renderShiftHistory();
+      else if(tab === 'products') renderProductTable();
     }
 
+    // ================== SHIFT MANAGEMENT ==================
     function checkSession() {
-      const bannerText = document.getElementById('session-info-text');
-      const actionBtn = document.getElementById('session-action-btn');
-
-      if (!session) {
-        bannerText.innerHTML = `<span class="text-amber-200 font-semibold">⚠️ Kasir Belum Dibuka</span>`;
-        actionBtn.innerHTML = `
-          <button onclick="openOpenSessionModal()" class="bg-amber-700 hover:bg-amber-600 text-white px-2.5 py-1 rounded text-xs font-bold shadow transition flex items-center">
-            <span class="mr-1">🚪</span> Buka Kasir
-          </button>
-        `;
+      const bText = document.getElementById('session-info-text'), aBtn = document.getElementById('session-action-btn');
+      if(!session) {
+        bText.innerHTML = `<span class="text-amber-200 font-semibold">⚠️ Kasir Belum Dibuka</span>`;
+        aBtn.innerHTML = `<button onclick="document.getElementById('open-session-modal').classList.remove('hidden')" class="bg-amber-700 hover:bg-amber-600 text-white px-2.5 py-1 rounded text-xs font-bold shadow flex items-center"><i class="fas fa-door-open mr-1"></i> Buka Kasir</button>`;
       } else {
-        const sessionSales = transactions
-          .filter(t => new Date(t.date) >= new Date(session.startTime))
-          .reduce((sum, t) => sum + (t.total || 0), 0);
-
-        bannerText.innerHTML = `
-          <span>🕒 ${new Date(session.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
-          <span>💼 ${formatRp(session.startCash)}</span>
-          <span class="font-bold text-amber-200">📈 ${formatRp(sessionSales)}</span>
-        `;
-        actionBtn.innerHTML = `
-          <button onclick="openCloseSessionModal()" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded text-xs font-bold shadow transition flex items-center">
-            <span class="mr-1">🔒</span> Tutup & Rekap
-          </button>
-        `;
+        const sales = transactions.filter(t => new Date(t.date) >= new Date(session.startTime)).reduce((s, t) => s + (t.total || 0), 0);
+        bText.innerHTML = `<span>🕒 ${new Date(session.startTime).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span><span>💼 ${formatRp(session.startCash)}</span><span class="font-bold text-amber-200">📈 ${formatRp(sales)}</span>`;
+        aBtn.innerHTML = `<button onclick="openCloseSessionModal()" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded text-xs font-bold shadow flex items-center"><i class="fas fa-lock mr-1"></i> Tutup Kasir</button>`;
       }
     }
-
-    function openOpenSessionModal() {
-      document.getElementById('start-cash-input').value = 100000;
-      document.getElementById('open-session-modal').classList.remove('hidden');
-    }
-
     function startSession() {
       const cash = parseFloat(document.getElementById('start-cash-input').value) || 0;
-      const shiftId = 'SHIFT-' + Date.now();
-      session = { 
-        id: shiftId,
-        startTime: new Date().toISOString(), 
-        startCash: cash,
-        status: 'OPEN'
-      };
-      
+      session = { id: 'SHIFT-' + Date.now(), startTime: new Date().toISOString(), startCash: cash, status: 'OPEN' };
       localStorage.setItem('warhome_session', JSON.stringify(session));
-
-      if (useFirebase && db && navigator.onLine) {
-        db.ref('session').set(session);
-      }
-      checkSession();
-      closeModal('open-session-modal');
-      customAlert("Sesi kasir berhasil dibuka dengan modal awal: " + formatRp(cash), "Sukses", "success");
+      if(useFirebase && navigator.onLine) db.ref('session').set(session);
+      checkSession(); closeModal('open-session-modal'); customAlert("Sesi kasir berhasil dibuka.", "Sukses", "success");
     }
-
     function openCloseSessionModal() {
-      if (!session) return customAlert("Sesi kasir belum dibuka!", "Error", "error");
-      const sessionSales = transactions
-        .filter(t => new Date(t.date) >= new Date(session.startTime))
-        .reduce((sum, t) => sum + (t.total || 0), 0);
-
-      const expectedCash = (session.startCash || 0) + sessionSales;
-      const body = document.getElementById('close-session-body');
-      body.innerHTML = `
+      if(!session) return;
+      const sales = transactions.filter(t => new Date(t.date) >= new Date(session.startTime)).reduce((s, t) => s + (t.total || 0), 0);
+      const exp = (session.startCash || 0) + sales;
+      document.getElementById('close-session-body').innerHTML = `
         <div class="space-y-2 text-sm text-gray-600">
-          <div class="flex justify-between"><span>Modal Kas Awal:</span> <span>${formatRp(session.startCash)}</span></div>
-          <div class="flex justify-between"><span>Total Penjualan:</span> <span>${formatRp(sessionSales)}</span></div>
-          <div class="flex justify-between font-bold border-t pt-1.5 text-gray-800"><span>Ekspektasi Kas Fisik:</span> <span>${formatRp(expectedCash)}</span></div>
+          <div class="flex justify-between"><span>Modal Awal:</span> <span>${formatRp(session.startCash)}</span></div>
+          <div class="flex justify-between"><span>Total Penjualan:</span> <span>${formatRp(sales)}</span></div>
+          <div class="flex justify-between font-bold border-t pt-1.5 text-gray-800"><span>Ekspektasi Kas:</span> <span>${formatRp(exp)}</span></div>
         </div>
         <div class="pt-2">
-          <label class="text-xs font-semibold text-gray-600">Jumlah Kas Fisik Aktual (Rp)</label>
-          <input type="number" id="actual-cash-input" value="${expectedCash}" min="0" class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none font-bold text-gray-800">
+          <label class="text-xs font-semibold text-gray-600">Kas Fisik Aktual (Rp)</label>
+          <input type="number" id="actual-cash-input" value="${exp}" class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-amber-500 font-bold">
         </div>
-        <div class="flex justify-end gap-2 pt-2 border-t">
-          <button type="button" onclick="closeModal('close-session-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
-          <button type="button" onclick="closeSession()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow">Tutup Sesi Sekarang</button>
-        </div>
-      `;
+        <div class="flex justify-end gap-2 pt-3 border-t mt-4">
+          <button type="button" onclick="closeModal('close-session-modal')" class="px-4 py-2 bg-gray-200 rounded-lg text-sm font-semibold">Batal</button>
+          <button type="button" onclick="closeSession()" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold shadow">Tutup Sesi</button>
+        </div>`;
       document.getElementById('close-session-modal').classList.remove('hidden');
     }
-
     function closeSession() {
-      if (!session) return;
-      const actualCash = parseFloat(document.getElementById('actual-cash-input').value) || 0;
-      const sessionSales = transactions
-        .filter(t => new Date(t.date) >= new Date(session.startTime))
-        .reduce((sum, t) => sum + (t.total || 0), 0);
+      if(!session) return;
+      const actual = parseFloat(document.getElementById('actual-cash-input').value) || 0;
+      const sales = transactions.filter(t => new Date(t.date) >= new Date(session.startTime)).reduce((s, t) => s + (t.total || 0), 0);
+      const exp = (session.startCash || 0) + sales;
+      const closed = { ...session, closeTime: new Date().toISOString(), totalSales: sales, expectedCash: exp, actualCash: actual, discrepancy: actual - exp, status: 'CLOSED' };
       
-      const expectedCash = (session.startCash || 0) + sessionSales;
-      const discrepancy = actualCash - expectedCash;
-
-      const closedShift = {
-        id: session.id || ('SHIFT-' + Date.now()),
-        startTime: session.startTime,
-        closeTime: new Date().toISOString(),
-        startCash: session.startCash,
-        totalSales: sessionSales,
-        expectedCash: expectedCash,
-        actualCash: actualCash,
-        discrepancy: discrepancy,
-        status: 'CLOSED'
-      };
-
-      cashSessions.unshift(closedShift);
-      localStorage.setItem('warhome_cash_sessions', JSON.stringify(cashSessions));
-
-      if (useFirebase && db && navigator.onLine) {
-        db.ref('cash_sessions/' + closedShift.id).set(closedShift);
-        db.ref('session').remove();
-      }
-
-      localStorage.removeItem('warhome_session');
-      session = null;
-      checkSession();
-      closeModal('close-session-modal');
-      customAlert(`Sesi kasir berhasil ditutup. Selisih kas: ${formatRp(discrepancy)}`, "Sesi Ditutup", "success");
+      cashSessions.unshift(closed); localStorage.setItem('warhome_cash_sessions', JSON.stringify(cashSessions));
+      if(useFirebase && navigator.onLine) { db.ref('cash_sessions/'+closed.id).set(closed); db.ref('session').remove(); }
+      localStorage.removeItem('warhome_session'); session = null; checkSession(); closeModal('close-session-modal');
+      customAlert(`Sesi ditutup. Selisih kas: ${formatRp(closed.discrepancy)}`, "Sukses", "success");
     }
-
     function renderShiftHistory() {
       const tbody = document.getElementById('shift-history-table-body');
-      
-      const totalShifts = cashSessions.length;
-      const totalShiftSales = cashSessions.reduce((sum, cs) => sum + (cs.totalSales || 0), 0);
-
-      document.getElementById('stat-total-shifts').innerText = `${totalShifts} Shift`;
-      document.getElementById('stat-total-shift-sales').innerText = formatRp(totalShiftSales);
+      document.getElementById('stat-total-shifts').innerText = `${cashSessions.length} Shift`;
+      document.getElementById('stat-total-shift-sales').innerText = formatRp(cashSessions.reduce((s, cs) => s + (cs.totalSales || 0), 0));
       document.getElementById('stat-active-shift-status').innerText = session ? 'Aktif' : 'Tidak Aktif';
 
-      if (totalShifts === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Belum ada riwayat buka tutup kasir.</td></tr>`;
-        return;
-      }
-
+      if(cashSessions.length === 0) return tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Belum ada riwayat shift.</td></tr>`;
       tbody.innerHTML = cashSessions.map(cs => {
-        const diffColor = cs.discrepancy > 0 ? 'text-emerald-700 font-bold' : (cs.discrepancy < 0 ? 'text-red-600 font-bold' : 'text-gray-700');
-        const diffText = cs.discrepancy > 0 ? `+${formatRp(cs.discrepancy)}` : formatRp(cs.discrepancy);
+        const dColor = cs.discrepancy > 0 ? 'text-emerald-600' : (cs.discrepancy < 0 ? 'text-red-600' : 'text-gray-700');
+        const dText = cs.discrepancy > 0 ? `+${formatRp(cs.discrepancy)}` : formatRp(cs.discrepancy);
         return `
-          <tr class="hover:bg-gray-50 transition">
+          <tr class="hover:bg-gray-50 border-b">
             <td class="p-3 font-bold text-xs">${cs.id}</td>
-            <td class="p-3 text-xs text-gray-500">
-              Buka: ${new Date(cs.startTime).toLocaleString('id-ID')}<br>
-              Tutup: ${cs.closeTime ? new Date(cs.closeTime).toLocaleString('id-ID') : '-'}
-            </td>
+            <td class="p-3 text-xs text-gray-500">Buka: ${new Date(cs.startTime).toLocaleString('id-ID')}<br>Tutup: ${cs.closeTime?new Date(cs.closeTime).toLocaleString('id-ID'):'-'}</td>
             <td class="p-3 text-right text-xs">${formatRp(cs.startCash)}</td>
             <td class="p-3 text-right text-xs font-semibold text-amber-800">${formatRp(cs.totalSales)}</td>
             <td class="p-3 text-right text-xs">${formatRp(cs.expectedCash)}</td>
             <td class="p-3 text-right text-xs font-bold">${formatRp(cs.actualCash)}</td>
-            <td class="p-3 text-right text-xs ${diffColor}">${diffText}</td>
-            <td class="p-3 text-center">
-              <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded-full font-semibold">Tutup</span>
-            </td>
-          </tr>
-        `;
+            <td class="p-3 text-right text-xs font-bold ${dColor}">${dText}</td>
+            <td class="p-3 text-center"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded-full">Tutup</span></td>
+          </tr>`;
       }).join('');
     }
 
+    // ================== POS & CART ==================
     function renderCategoryFilters() {
-      const categories = ['All', 'Minuman', 'Minuman Dingin', 'Makanan', 'Snack'];
-      const container = document.getElementById('category-filters');
-      container.innerHTML = categories.map(cat => {
-        const icon = categoryIcons[cat] || '<i class="fas fa-th"></i>';
-        const active = selectedCategory === cat ? 'bg-amber-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200';
-        return `
-          <button onclick="setCategory('${cat}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1 whitespace-nowrap transition ${active}">
-            <span>${icon}</span>
-            <span>${cat === 'All' ? 'Semua' : cat}</span>
-          </button>
-        `;
-      }).join('');
+      const cats = ['All', 'Minuman', 'Minuman Dingin', 'Makanan', 'Snack'];
+      document.getElementById('category-filters').innerHTML = cats.map(c => `
+        <button onclick="setCategory('${c}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1 whitespace-nowrap transition ${selectedCategory===c?'bg-amber-800 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+          <span>${categoryIcons[c] || ''}</span><span>${c==='All'?'Semua':c}</span>
+        </button>`).join('');
     }
-
-    function setCategory(cat) {
-      selectedCategory = cat;
-      renderCategoryFilters();
-      renderProducts();
-    }
-
+    function setCategory(c) { selectedCategory = c; renderCategoryFilters(); renderProducts(); }
     function renderProducts() {
-      const searchInput = document.getElementById('search-input');
-      const search = searchInput ? searchInput.value.toLowerCase() : '';
+      const q = (document.getElementById('search-input')?.value||'').toLowerCase();
       const grid = document.getElementById('product-grid');
-      
-      const filtered = products.filter(p => {
-        const matchCat = selectedCategory === 'All' || p.category === selectedCategory;
-        const matchSearch = p.name.toLowerCase().includes(search);
-        return matchCat && matchSearch;
-      });
-
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-2 sm:col-span-3 text-center py-10 text-gray-400 text-sm">Belum ada menu di kategori ini.</div>`;
-        return;
-      }
-
+      const filtered = products.filter(p => (selectedCategory==='All'||p.category===selectedCategory) && p.name.toLowerCase().includes(q));
+      if(!filtered.length) return grid.innerHTML = `<div class="col-span-full text-center py-10 text-gray-400">Tidak ada produk.</div>`;
       grid.innerHTML = filtered.map(p => `
-        <div onclick="addToCart(${p.id})" class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm hover:shadow-md cursor-pointer transition flex flex-col justify-between space-y-2 relative overflow-hidden group">
-          <div class="flex justify-between items-start">
-            <span class="text-xl">${categoryIcons[p.category] || '<i class="fas fa-box"></i>'}</span>
-            <span class="text-[10px] font-semibold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full truncate max-w-[80px]" title="${p.category}">${p.category}</span>
-          </div>
-          <div>
-            <h3 class="font-bold text-sm text-gray-800 line-clamp-2">${p.name}</h3>
-            <p class="text-xs text-amber-800 font-bold mt-1">${formatRp(p.price)}</p>
-          </div>
-          <div class="text-[10px] text-gray-400 border-t pt-1 flex justify-between">
-            <span>Stok: ${p.stock}</span>
-            <span class="text-amber-700 font-medium group-hover:text-amber-900">+ Tambah</span>
-          </div>
-        </div>
-      `).join('');
+        <div onclick="addToCart(${p.id})" class="bg-white p-3 rounded-xl border hover:shadow-md cursor-pointer transition flex flex-col justify-between space-y-2 group">
+          <div class="flex justify-between items-start"><span class="text-xl">${categoryIcons[p.category]||''}</span><span class="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full truncate">${p.category}</span></div>
+          <div><h3 class="font-bold text-sm text-gray-800 line-clamp-2">${p.name}</h3><p class="text-xs text-amber-800 font-bold mt-1">${formatRp(p.price)}</p></div>
+          <div class="text-[10px] text-gray-400 border-t pt-1 flex justify-between"><span>Stok: ${p.stock}</span><span class="text-amber-700 font-medium group-hover:text-amber-900">+ Tambah</span></div>
+        </div>`).join('');
     }
-
     function addToCart(id) {
-      if (!session) return openOpenSessionModal();
-      const prod = products.find(p => p.id === id);
-      if (!prod || prod.stock <= 0) return customAlert("Maaf, stok menu ini sudah habis!", "Stok Habis", "error");
-
-      const existing = cart.find(item => item.id === id);
-      if (existing) {
-        if (existing.qty >= prod.stock) return customAlert("Mencapai batas maksimal stok yang tersedia!", "Batas Stok", "warning");
-        existing.qty++;
-      } else {
-        cart.push({ ...prod, hpp: prod.hpp || 0, qty: 1 });
-      }
+      if(!session) return document.getElementById('open-session-modal').classList.remove('hidden');
+      const p = products.find(x => x.id === id); if(!p || p.stock<=0) return customAlert("Stok habis!", "Error", "error");
+      const ex = cart.find(x => x.id === id);
+      if(ex) { if(ex.qty >= p.stock) return customAlert("Batas stok!", "Warning", "warning"); ex.qty++; }
+      else cart.push({...p, hpp:p.hpp||0, qty:1});
       renderCart();
     }
-
-    function updateQty(id, delta) {
-      const item = cart.find(i => i.id === id);
-      if (!item) return;
-      const prod = products.find(p => p.id === id);
-
-      item.qty += delta;
-      if (item.qty > prod.stock) {
-        item.qty = prod.stock;
-        customAlert("Batas stok maksimum tercapai!", "Info", "info");
-      }
-
-      if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+    function updateQty(id, d) {
+      const i = cart.find(x=>x.id===id), p = products.find(x=>x.id===id); if(!i) return;
+      i.qty += d; if(i.qty > p.stock) { i.qty = p.stock; customAlert("Batas stok!"); }
+      if(i.qty <= 0) cart = cart.filter(x=>x.id!==id);
       renderCart();
     }
-
-    function clearCart() {
-      cart = [];
-      const custInput = document.getElementById('customer-name-input');
-      if(custInput) custInput.value = '';
-      renderCart();
-    }
-
+    function clearCart() { cart = []; const ci = document.getElementById('customer-name-input'); if(ci) ci.value=''; renderCart(); }
     function renderCart() {
-      const container = document.getElementById('cart-items');
-      if (cart.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-12 text-gray-400 space-y-2">
-            <i class="fas fa-shopping-basket text-3xl"></i>
-            <p class="text-xs">Keranjang masih kosong</p>
+      const c = document.getElementById('cart-items');
+      if(!cart.length) c.innerHTML = `<div class="text-center py-12 text-gray-400"><i class="fas fa-shopping-basket text-3xl mb-2"></i><p class="text-xs">Keranjang kosong</p></div>`;
+      else c.innerHTML = cart.map(i => `
+        <div class="flex items-center justify-between pt-2">
+          <div class="flex-1 pr-2"><h4 class="font-semibold text-xs">${i.name}</h4><span class="text-[10px] text-amber-800 font-bold">${formatRp(i.price)}</span></div>
+          <div class="flex items-center space-x-2">
+            <button onclick="updateQty(${i.id}, -1)" class="w-6 h-6 bg-gray-200 rounded-full text-xs font-bold">-</button>
+            <span class="text-xs font-bold w-4 text-center">${i.qty}</span>
+            <button onclick="updateQty(${i.id}, 1)" class="w-6 h-6 bg-amber-700 text-white rounded-full text-xs font-bold">+</button>
           </div>
-        `;
-      } else {
-        container.innerHTML = cart.map(item => `
-          <div class="flex items-center justify-between pt-2">
-            <div class="flex-1 pr-2">
-              <h4 class="font-semibold text-xs text-gray-800">${item.name}</h4>
-              <span class="text-[10px] text-amber-800 font-bold">${formatRp(item.price)}</span>
-            </div>
-            <div class="flex items-center space-x-2">
-              <button onclick="updateQty(${item.id}, -1)" class="w-6 h-6 bg-gray-200 text-gray-700 rounded-full font-bold text-xs flex items-center justify-center hover:bg-gray-300">-</button>
-              <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
-              <button onclick="updateQty(${item.id}, 1)" class="w-6 h-6 bg-amber-700 text-white rounded-full font-bold text-xs flex items-center justify-center hover:bg-amber-800">+</button>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-      const tax = Math.round(subtotal * 0.11);
-      const total = subtotal + tax;
-
-      document.getElementById('cart-subtotal').innerText = formatRp(subtotal);
+        </div>`).join('');
+      const sub = cart.reduce((s,i)=>s+(i.price*i.qty),0), tax = Math.round(sub*0.11);
+      document.getElementById('cart-subtotal').innerText = formatRp(sub);
       document.getElementById('cart-tax').innerText = formatRp(tax);
-      document.getElementById('cart-total').innerText = formatRp(total);
+      document.getElementById('cart-total').innerText = formatRp(sub+tax);
     }
 
+    // ================== CHECKOUT & PAYMENT ==================
     function openPaymentModal() {
-      if (cart.length === 0) return customAlert("Keranjang belanja masih kosong!", "Gagal Checkout", "error");
-      if (!session) return openOpenSessionModal();
-
-      const customerNameInput = document.getElementById('customer-name-input');
-      const customerName = customerNameInput ? customerNameInput.value.trim() : '';
-
-      if (!customerName) {
-        customerNameInput.focus();
-        return customAlert("Nama Pelanggan atau Nomor Meja wajib diisi sebelum memilih pembayaran!", "Validasi Gagal", "warning");
-      }
-
+      if(!cart.length) return customAlert("Keranjang kosong!");
+      if(!session) return document.getElementById('open-session-modal').classList.remove('hidden');
+      const cn = document.getElementById('customer-name-input');
+      if(!cn.value.trim()) { cn.focus(); return customAlert("Nama Pelanggan wajib diisi!"); }
       document.getElementById('payment-method-modal').classList.remove('hidden');
     }
-
-    function selectPaymentMethod(method) {
+    function selectPaymentMethod(m) {
       closeModal('payment-method-modal');
-      
-      if (method === 'Cash') {
-        finalizeCheckout('Cash');
-      } else if (method === 'QRIS') {
-        openQrisModal();
-      }
+      if(m === 'Cash') finalizeCheckout('Cash'); else openQrisModal();
     }
-
     function openQrisModal() {
-      const customerNameInput = document.getElementById('customer-name-input');
-      const customerName = customerNameInput ? customerNameInput.value.trim() : 'Umum';
+      const cn = document.getElementById('customer-name-input').value.trim();
+      const sub = cart.reduce((s,i)=>s+(i.price*i.qty),0); const tot = sub + Math.round(sub*0.11);
+      document.getElementById('qris-customer-tag').innerText = `(${cn})`;
+      document.getElementById('qris-total-amount').innerText = formatRp(tot);
       
-      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-      const tax = Math.round(subtotal * 0.11);
-      const total = subtotal + tax;
-
-      document.getElementById('qris-customer-tag').innerText = `(${customerName})`;
-      document.getElementById('qris-total-amount').innerText = formatRp(total);
-
-      let timeLeft = 180; // 3 Menit
-      const countdownEl = document.getElementById('qris-countdown');
-      
-      if (qrisTimerInterval) clearInterval(qrisTimerInterval);
-      
+      let tLeft = 180; if(qrisTimerInterval) clearInterval(qrisTimerInterval);
       qrisTimerInterval = setInterval(() => {
-        let mins = Math.floor(timeLeft / 60);
-        let secs = timeLeft % 60;
-        countdownEl.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-        if (timeLeft <= 0) {
-          clearInterval(qrisTimerInterval);
-          closeModal('qris-modal');
-          customAlert("Waktu pembayaran QRIS habis. Silakan buat ulang pesanan.", "Waktu Habis", "error");
-        }
-        timeLeft--;
+        document.getElementById('qris-countdown').innerText = `${String(Math.floor(tLeft/60)).padStart(2,'0')}:${String(tLeft%60).padStart(2,'0')}`;
+        if(tLeft <= 0) { clearInterval(qrisTimerInterval); closeModal('qris-modal'); customAlert("Waktu habis."); }
+        tLeft--;
       }, 1000);
-
       document.getElementById('qris-modal').classList.remove('hidden');
     }
-
-    function closeQrisModal() {
-      if (qrisTimerInterval) clearInterval(qrisTimerInterval);
-      closeModal('qris-modal');
-    }
-
-    function simulateQrisSuccess() {
-      if (qrisTimerInterval) clearInterval(qrisTimerInterval);
-      closeModal('qris-modal');
-      finalizeCheckout('QRIS');
-    }
-
-    function finalizeCheckout(paymentMethod) {
-      const customerNameInput = document.getElementById('customer-name-input');
-      const customerName = customerNameInput ? customerNameInput.value.trim() : 'Umum';
-
-      const totalHpp = cart.reduce((sum, item) => sum + ((item.hpp || 0) * item.qty), 0);
-      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-      const tax = Math.round(subtotal * 0.11);
-      const total = subtotal + tax;
-      const profit = subtotal - totalHpp;
+    function closeQrisModal() { if(qrisTimerInterval) clearInterval(qrisTimerInterval); closeModal('qris-modal'); }
+    function simulateQrisSuccess() { closeQrisModal(); finalizeCheckout('QRIS'); }
+    function finalizeCheckout(method) {
+      const cn = document.getElementById('customer-name-input').value.trim();
+      const tHpp = cart.reduce((s,i)=>s+((i.hpp||0)*i.qty),0), sub = cart.reduce((s,i)=>s+(i.price*i.qty),0), tax = Math.round(sub*0.11);
+      const trx = { id: 'TRX-'+Date.now().toString().slice(-6), customerName: cn, paymentMethod: method, date: new Date().toISOString(), items: [...cart], subtotal: sub, totalHpp: tHpp, profit: sub-tHpp, tax: tax, total: sub+tax };
       
-      const trxId = 'TRX-' + Date.now().toString().slice(-6);
-
-      const newTrx = {
-        id: trxId,
-        customerName: customerName,
-        paymentMethod: paymentMethod,
-        date: new Date().toISOString(),
-        items: [...cart],
-        subtotal: subtotal,
-        totalHpp: totalHpp,
-        profit: profit,
-        tax: tax,
-        total: total
-      };
-
-      const updatedProducts = products.map(p => {
-        const itemInCart = cart.find(c => c.id === p.id);
-        if (itemInCart) return { ...p, stock: p.stock - itemInCart.qty };
-        return p;
-      });
-
-      products = updatedProducts;
-      transactions.unshift(newTrx);
-      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
-      localStorage.setItem('warhome_products', JSON.stringify(products));
-
-      if (useFirebase && db && navigator.onLine) {
-        db.ref('transactions/' + trxId).set(newTrx);
-        db.ref('products').set(updatedProducts);
-      }
-
-      clearCart();
-      renderProducts();
-      checkSession();
-      showReceiptModal(newTrx);
+      products = products.map(p => { const c = cart.find(x=>x.id===p.id); return c ? {...p, stock: p.stock-c.qty} : p; });
+      transactions.unshift(trx);
+      localStorage.setItem('warhome_transactions', JSON.stringify(transactions)); localStorage.setItem('warhome_products', JSON.stringify(products));
+      if(useFirebase && navigator.onLine) { db.ref('transactions/'+trx.id).set(trx); db.ref('products').set(products); }
+      
+      clearCart(); renderProducts(); checkSession(); showReceiptModal(trx);
     }
 
-    function showReceiptModal(trx) {
-      currentActiveTransaction = trx;
-      document.getElementById('rec-id').innerText = trx.id;
-      document.getElementById('rec-date').innerText = new Date(trx.date).toLocaleDateString('id-ID') + ' ' + new Date(trx.date).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-      document.getElementById('rec-customer').innerText = trx.customerName || '-';
-      document.getElementById('rec-payment').innerText = trx.paymentMethod || 'Cash';
-      
-      document.getElementById('rec-items').innerHTML = trx.items.map(item => `
-        <div>
-          <div class="flex justify-between">
-            <span class="font-bold">${item.name}</span>
-            <span>${formatRp(item.price * item.qty)}</span>
-          </div>
-          <div class="text-[10px] text-gray-600">${item.qty} x ${formatRp(item.price)}</div>
-        </div>
-      `).join('');
-
-      document.getElementById('rec-subtotal').innerText = formatRp(trx.subtotal);
-      document.getElementById('rec-tax').innerText = formatRp(trx.tax);
-      document.getElementById('rec-total').innerText = formatRp(trx.total);
-
+    // ================== RECEIPT & PRINT ==================
+    function setPaperSize(s) {
+      currentPaperSize = s; localStorage.setItem('warhome_paper_size', s);
+      const b58 = document.getElementById('btn-paper-58'), b80 = document.getElementById('btn-paper-80'), c = document.getElementById('receipt-modal-content');
+      b58.className = s==='58mm' ? "px-2 py-1 rounded bg-amber-800 text-white" : "px-2 py-1 rounded text-gray-600";
+      b80.className = s==='80mm' ? "px-2 py-1 rounded bg-amber-800 text-white" : "px-2 py-1 rounded text-gray-600";
+      c.className = `bg-white text-black p-2 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-${s}`;
+    }
+    function showReceiptModal(t) {
+      currentActiveTransaction = t;
+      document.getElementById('rec-id').innerText = t.id; document.getElementById('rec-date').innerText = new Date(t.date).toLocaleString('id-ID');
+      document.getElementById('rec-customer').innerText = t.customerName||'-'; document.getElementById('rec-payment').innerText = t.paymentMethod||'Cash';
+      document.getElementById('rec-items').innerHTML = t.items.map(i => `<div><div class="flex justify-between font-bold"><span>${i.name}</span><span>${formatRp(i.price*i.qty)}</span></div><div class="text-[10px] text-gray-600">${i.qty} x ${formatRp(i.price)}</div></div>`).join('');
+      document.getElementById('rec-subtotal').innerText = formatRp(t.subtotal); document.getElementById('rec-tax').innerText = formatRp(t.tax); document.getElementById('rec-total').innerText = formatRp(t.total);
       document.getElementById('receipt-modal').classList.remove('hidden');
     }
-
-    async function connectBluetoothPrinter() {
+    async function triggerBluetoothPrint() {
+      const t = currentActiveTransaction; if(!t) return;
+      if(!navigator.bluetooth) return customAlert("Browser tidak support Bluetooth Web API.");
       try {
-        bluetoothDevice = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [PRINTER_SERVICE_UUID]
-        });
-
-        const server = await bluetoothDevice.gatt.connect();
-        const service = await server.getPrimaryService(PRINTER_SERVICE_UUID);
-        const characteristics = await service.getCharacteristics();
-        printerCharacteristic = characteristics[0];
-
-        customAlert("Terhubung ke Printer Bluetooth: " + (bluetoothDevice.name || "Thermal Printer"), "Koneksi Berhasil", "success");
-        return true;
-      } catch (error) {
-        console.error("Koneksi Bluetooth Gagal:", error);
-        customAlert("Gagal terhubung ke printer Bluetooth. Pastikan bluetooth menyala dan mendukung Web Bluetooth (Chrome).", "Koneksi Gagal", "error");
-        return false;
-      }
+        if(!printerCharacteristic) {
+          bluetoothDevice = await navigator.bluetooth.requestDevice({acceptAllDevices:true, optionalServices:[PRINTER_SERVICE_UUID]});
+          const server = await bluetoothDevice.gatt.connect();
+          const svc = await server.getPrimaryService(PRINTER_SERVICE_UUID);
+          printerCharacteristic = (await svc.getCharacteristics())[0];
+        }
+        const w = currentPaperSize === '80mm' ? 48 : 32; const div = "-".repeat(w)+"\n";
+        let txt = (w===48 ? "                  WARHOME POS                   \n     Jalan Ahmad Yani Handel 2 Muara Jawa       \n" : "        WARHOME POS         \n  Jl. A. Yani Handel 2 M. Jawa \n") + div;
+        txt += `No: ${t.id}\nTgl: ${new Date(t.date).toLocaleString('id-ID')}\nPlg: ${t.customerName}\nBayar: ${t.paymentMethod}\n`+div;
+        t.items.forEach(i => { txt += `${i.name}\n`; const l=`${i.qty} x ${formatRp(i.price)}`, r=formatRp(i.price*i.qty); txt += l+" ".repeat(Math.max(0,w-l.length-r.length))+r+"\n"; });
+        txt += div; const row = (l,r) => l+" ".repeat(Math.max(0,w-l.length-formatRp(r).length))+formatRp(r)+"\n";
+        txt += row("Subtotal",t.subtotal) + row("PPN 11%",t.tax) + div + row("TOTAL",t.total) + div + " Terima Kasih Atas Kunjungan Anda!\n\n\n";
+        
+        await printerCharacteristic.writeValue(new Uint8Array([0x1B,0x40,...new TextEncoder().encode(txt),0x0A,0x0A]));
+        customAlert("Cetak berhasil!", "Sukses", "success");
+      } catch(e) { console.error(e); printerCharacteristic=null; customAlert("Koneksi gagal."); }
     }
 
-    function textToEscPosBytes(text) {
-      const encoder = new TextEncoder();
-      const ESC = 0x1B;
-      const INIT_PRINTER = [ESC, 0x40];
-      const FEED_LINE = [0x0A];
-
-      let commandBytes = [];
-      commandBytes.push(...INIT_PRINTER);
-      const textBytes = encoder.encode(text);
-      commandBytes.push(...textBytes);
-      commandBytes.push(...FEED_LINE, ...FEED_LINE, ...FEED_LINE);
-
-      return new Uint8Array(commandBytes);
-    }
-
-    async function printViaBluetooth(trx) {
-      if (!navigator.bluetooth) {
-        customAlert("Browser HP kamu belum mendukung Web Bluetooth API. Wajib menggunakan Google Chrome HP Android!", "Tidak Mendukung", "error");
-        return;
-      }
-
-      if (!printerCharacteristic) {
-        const connected = await connectBluetoothPrinter();
-        if (!connected) return;
-      }
-
-      const is80mm = currentPaperSize === '80mm';
-      const LINE_WIDTH = is80mm ? 48 : 32;
-      const DIVIDER = "-".repeat(LINE_WIDTH) + "\n";
-
-      let receiptText = "";
-      
-      if (is80mm) {
-        receiptText += "                  WARHOME POS                   \n";
-        receiptText += "     Jalan Ahmad Yani Handel 2 Muara Jawa       \n";
-        receiptText += "               Telp: 081229830017               \n";
-      } else {
-        receiptText += "        WARHOME POS         \n";
-        receiptText += "  Jl. A. Yani Handel 2 M. Jawa \n";
-        receiptText += "     Telp: 081229830017     \n";
-      }
-
-      receiptText += DIVIDER;
-      receiptText += `No  : ${trx.id}\n`;
-      receiptText += `Tgl : ${new Date(trx.date).toLocaleDateString('id-ID')} ${new Date(trx.date).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}\n`;
-      receiptText += `Pelanggan: ${trx.customerName || '-'}\n`;
-      receiptText += `Pembayaran: ${trx.paymentMethod || 'Cash'}\n`;
-      receiptText += DIVIDER;
-
-      trx.items.forEach(item => {
-        receiptText += `${item.name}\n`;
-        const linePrice = `${item.qty} x ${formatRp(item.price)}`;
-        const lineTotal = formatRp(item.price * item.qty);
-        const space = LINE_WIDTH - (linePrice.length + lineTotal.length);
-        receiptText += linePrice + " ".repeat(Math.max(0, space)) + lineTotal + "\n";
-      });
-
-      receiptText += DIVIDER;
-
-      const appendRow = (label, val) => {
-        const valStr = formatRp(val);
-        const space = LINE_WIDTH - (label.length + valStr.length);
-        return label + " ".repeat(Math.max(0, space)) + valStr + "\n";
-      };
-
-      receiptText += appendRow("Subtotal", trx.subtotal);
-      receiptText += appendRow("PPN (11%)", trx.tax);
-      receiptText += DIVIDER;
-      receiptText += appendRow("TOTAL", trx.total);
-      receiptText += DIVIDER;
-      
-      if (is80mm) {
-        receiptText += "     Terima Kasih Atas Kunjungan Anda di WARHOME! \n";
-      } else {
-        receiptText += "  Terima Kasih Atas Kunjungan! \n";
-      }
-
-      try {
-        const dataBytes = textToEscPosBytes(receiptText);
-        await printerCharacteristic.writeValue(dataBytes);
-        customAlert(`Resi ${currentPaperSize} berhasil dicetak via Bluetooth!`, "Cetak Berhasil", "success");
-      } catch (error) {
-        console.error("Gagal Mengirim Data Cetak:", error);
-        customAlert("Gagal mencetak resi: Koneksi terputus.", "Cetak Gagal", "error");
-        printerCharacteristic = null;
-      }
-    }
-
-    function triggerBluetoothPrint() {
-      if (currentActiveTransaction) {
-        printViaBluetooth(currentActiveTransaction);
-      }
-    }
-
+    // ================== HISTORY & CHARTS ==================
     function populateYearFilter() {
-      const yearSelect = document.getElementById('filter-year');
-      const currentYear = new Date().getFullYear();
-      if (yearSelect.innerHTML.trim() === '') {
-        yearSelect.innerHTML = `<option value="all">Semua Tahun</option>`;
-        for (let y = currentYear; y >= currentYear - 3; y--) {
-          yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
-        }
-      }
+      const y = document.getElementById('filter-year'), cur = new Date().getFullYear();
+      if(!y.innerHTML) { y.innerHTML = `<option value="all">Semua Thn</option>`; for(let i=cur; i>=cur-3; i--) y.innerHTML+=`<option value="${i}">${i}</option>`; }
     }
-
-    function clearDateFilter() {
-      document.getElementById('filter-date').value = '';
-      renderHistory();
-    }
-
+    function clearDateFilter() { document.getElementById('filter-date').value = ''; renderHistory(); }
     function renderHistory() {
-      const dateFilter = document.getElementById('filter-date').value; 
-      const monthFilter = document.getElementById('filter-month').value;
-      const yearFilter = document.getElementById('filter-year').value;
-
+      const dF = document.getElementById('filter-date').value, mF = document.getElementById('filter-month').value, yF = document.getElementById('filter-year').value;
       const filtered = transactions.filter(t => {
-        const d = new Date(t.date);
-        const localDateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-
-        if (dateFilter && dateFilter !== '') {
-          return localDateStr === dateFilter;
-        }
-
-        const matchYear = yearFilter === 'all' || d.getFullYear() === parseInt(yearFilter);
-        const matchMonth = monthFilter === 'all' || d.getMonth() === parseInt(monthFilter);
-        return matchYear && matchMonth;
+        const d = new Date(t.date), local = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        if(dF) return local === dF;
+        return (yF==='all'||d.getFullYear()===+yF) && (mF==='all'||d.getMonth()===+mF);
       });
-
-      const totalRev = filtered.reduce((s, t) => s + (t.subtotal || 0), 0);
-      const totalProfit = filtered.reduce((s, t) => {
-          let p = t.profit;
-          if (p === undefined) p = t.subtotal - (t.totalHpp || 0);
-          return s + p;
-      }, 0);
-      const totalItems = filtered.reduce((s, t) => s + (t.items ? t.items.reduce((is, i) => is + i.qty, 0) : 0), 0);
-
-      document.getElementById('stat-monthly-revenue').innerText = formatRp(totalRev);
-      document.getElementById('stat-monthly-profit').innerText = formatRp(totalProfit);
+      document.getElementById('stat-monthly-revenue').innerText = formatRp(filtered.reduce((s,t)=>s+(t.subtotal||0),0));
+      document.getElementById('stat-monthly-profit').innerText = formatRp(filtered.reduce((s,t)=>s+(t.profit!==undefined?t.profit:t.subtotal-(t.totalHpp||0)),0));
       document.getElementById('stat-monthly-count').innerText = `${filtered.length} TRX`;
-      document.getElementById('stat-monthly-items').innerText = `${totalItems} Item`;
-
-      const tbody = document.getElementById('history-table-body');
+      document.getElementById('stat-monthly-items').innerText = `${filtered.reduce((s,t)=>s+(t.items?t.items.reduce((a,b)=>a+b.qty,0):0),0)} Item`;
       
-      if(filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Belum ada transaksi pada filter tanggal/bulan/tahun ini.</td></tr>`;
-      } else {
-        tbody.innerHTML = filtered.map(t => {
-          let p = t.profit !== undefined ? t.profit : (t.subtotal - (t.totalHpp || 0));
-          const paymentBadge = t.paymentMethod === 'QRIS' 
-            ? '<span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] rounded-full font-semibold">QRIS</span>' 
-            : '<span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full font-semibold">Cash</span>';
-          
-          return `
-            <tr class="hover:bg-gray-50 transition">
-              <td class="p-3 font-bold text-xs">${t.id}</td>
-              <td class="p-3 text-xs font-semibold text-gray-800">${t.customerName || '-'}</td>
-              <td class="p-3 text-xs">${paymentBadge}</td>
-              <td class="p-3 text-xs text-gray-500">${new Date(t.date).toLocaleString('id-ID')}</td>
-              <td class="p-3 text-xs leading-tight">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
-              <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.subtotal)}</td>
-              <td class="p-3 text-right font-bold text-xs text-emerald-700">${formatRp(p)}</td>
-              <td class="p-3 text-center space-x-1.5 flex justify-center">
-                <button onclick='showReceiptModal(${JSON.stringify(t)})' title="Cetak Ulang" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded text-[10px] font-semibold transition">
-                  <i class="fas fa-print"></i>
-                </button>
-                <button onclick="openEditTrxModal('${t.id}')" title="Edit Transaksi" class="bg-blue-50 hover:bg-blue-100 text-blue-700 p-1.5 rounded text-[10px] font-semibold transition">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="requestDeleteTransaction('${t.id}')" title="Hapus" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded text-[10px] font-semibold transition">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      }
-
-      // Render Grafik Menu Terlaris berdasarkan data riwayat yang sudah di filter tanggal/bulan/tahun
+      const tb = document.getElementById('history-table-body');
+      if(!filtered.length) tb.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Tidak ada data.</td></tr>`;
+      else tb.innerHTML = filtered.map(t => {
+        const p = t.profit!==undefined?t.profit:t.subtotal-(t.totalHpp||0);
+        return `
+          <tr class="hover:bg-gray-50 border-b">
+            <td class="p-3 font-bold text-xs">${t.id}</td><td class="p-3 text-xs font-bold">${t.customerName||'-'}</td>
+            <td class="p-3 text-xs"><span class="px-2 py-0.5 rounded-full ${t.paymentMethod==='QRIS'?'bg-blue-100 text-blue-800':'bg-amber-100 text-amber-800'}">${t.paymentMethod||'Cash'}</span></td>
+            <td class="p-3 text-xs text-gray-500">${new Date(t.date).toLocaleString('id-ID')}</td>
+            <td class="p-3 text-xs">${t.items?t.items.map(i=>`${i.name}(${i.qty})`).join(', '):'-'}</td>
+            <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.subtotal)}</td>
+            <td class="p-3 text-right font-bold text-xs text-emerald-700">${formatRp(p)}</td>
+            <td class="p-3 text-center space-x-1 flex justify-center">
+              <button onclick='showReceiptModal(${JSON.stringify(t)})' class="bg-gray-200 p-1.5 rounded"><i class="fas fa-print"></i></button>
+              <button onclick="openEditTrxModal('${t.id}')" class="bg-blue-100 text-blue-700 p-1.5 rounded"><i class="fas fa-edit"></i></button>
+              <button onclick="requestDeleteTransaction('${t.id}')" class="bg-red-100 text-red-600 p-1.5 rounded"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>`;
+      }).join('');
       renderTopItemsChart(filtered);
     }
-
-    function updateTopItemsCategory(cat) {
-      topItemsCategoryFilter = cat;
-      renderHistory(); 
-    }
-
-    function renderTopItemsChart(filteredTransactions) {
-      const canvas = document.getElementById('topItemsChart');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (topItemsChart) topItemsChart.destroy();
-
-      const itemCounts = {};
-      filteredTransactions.forEach(trx => {
-        if (trx.items) {
-          trx.items.forEach(item => {
-            if (topItemsCategoryFilter !== 'All' && item.category !== topItemsCategoryFilter) {
-              return; // Skip jika tidak cocok dengan filter dropdown grafik
-            }
-            if (!itemCounts[item.name]) itemCounts[item.name] = 0;
-            itemCounts[item.name] += item.qty;
-          });
-        }
-      });
-
-      const sortedItems = Object.keys(itemCounts)
-        .map(name => ({ name, count: itemCounts[name] }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
-
-      const labels = sortedItems.map(i => i.name);
-      const data = sortedItems.map(i => i.count);
-
-      topItemsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Total Terjual (Porsi/Pcs)',
-            data: data,
-            backgroundColor: 'rgba(234, 88, 12, 0.85)',
-            borderRadius: 4
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return ` ${context.raw} Terjual`;
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: { precision: 0 }
-            },
-            y: {
-              ticks: { font: { size: 10 } }
-            }
-          }
-        }
-      });
-    }
-
-    function openEditTrxModal(trxId) {
-      const trx = transactions.find(t => t.id === trxId);
-      if(!trx) return;
-      currentEditTrxId = trxId;
-      currentEditTrxData = JSON.parse(JSON.stringify(trx));
-      
-      document.getElementById('edit-trx-id').innerText = trxId;
-      document.getElementById('edit-customer-name-input').value = trx.customerName || '';
-      renderEditTrxModal();
-      document.getElementById('edit-trx-modal').classList.remove('hidden');
-    }
-
-    function updateEditCustomerName(val) {
-      if (currentEditTrxData) {
-        currentEditTrxData.customerName = val.trim();
-      }
-    }
-
-    function renderEditTrxModal() {
-      const container = document.getElementById('edit-trx-items-container');
-      
-      if(currentEditTrxData.items.length === 0) {
-        container.innerHTML = `<div class="text-center text-red-500 text-sm py-4"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>Tidak ada item tersisa. Menyimpan sekarang akan menghapus transaksi ini.</div>`;
-      } else {
-        container.innerHTML = currentEditTrxData.items.map((item, index) => `
-          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 border border-gray-200 p-3 rounded-lg bg-gray-50 relative">
-            <div class="flex-1 w-full">
-              <p class="text-sm font-bold text-gray-800">${item.name}</p>
-              <div class="flex flex-wrap gap-2 mt-2">
-                <div class="w-16">
-                  <label class="text-[10px] text-gray-500 font-semibold">Qty</label>
-                  <input type="number" oninput="updateEditTrxItem(${index}, 'qty', this.value)" value="${item.qty}" min="1" class="w-full border border-gray-300 rounded p-1 text-xs text-center focus:ring-1 focus:ring-blue-500 outline-none">
-                </div>
-                <div class="flex-1 min-w-[100px]">
-                  <label class="text-[10px] text-gray-500 font-semibold">HPP / Modal (Rp)</label>
-                  <input type="number" oninput="updateEditTrxItem(${index}, 'hpp', this.value)" value="${item.hpp || 0}" min="0" class="w-full border border-gray-300 rounded p-1 text-xs text-right focus:ring-1 focus:ring-blue-500 outline-none">
-                </div>
-                <div class="flex-1 min-w-[100px]">
-                  <label class="text-[10px] text-gray-500 font-semibold">Harga Jual (Rp)</label>
-                  <input type="number" oninput="updateEditTrxItem(${index}, 'price', this.value)" value="${item.price}" min="0" class="w-full border border-gray-300 rounded p-1 text-xs text-right focus:ring-1 focus:ring-blue-500 outline-none">
-                </div>
-              </div>
-            </div>
-            <button onclick="removeEditTrxItem(${index})" title="Hapus Item" class="mt-2 sm:mt-0 px-3 py-4 text-red-500 hover:text-white hover:bg-red-500 bg-red-50 rounded-lg self-end sm:self-center transition">
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
-        `).join('');
-      }
-
-      let subtotal = 0;
-      let totalHpp = 0;
-      currentEditTrxData.items.forEach(item => {
-        subtotal += (item.price * item.qty);
-        totalHpp += (item.hpp * item.qty);
-      });
-      
-      currentEditTrxData.subtotal = subtotal;
-      currentEditTrxData.totalHpp = totalHpp;
-      currentEditTrxData.tax = Math.round(subtotal * 0.11);
-      currentEditTrxData.total = subtotal + currentEditTrxData.tax;
-      currentEditTrxData.profit = subtotal - totalHpp;
-
-      document.getElementById('edit-trx-subtotal').innerText = formatRp(subtotal);
-      document.getElementById('edit-trx-hpp').innerText = formatRp(totalHpp);
-      document.getElementById('edit-trx-profit').innerText = formatRp(currentEditTrxData.profit);
-      document.getElementById('edit-trx-tax').innerText = formatRp(currentEditTrxData.tax);
-      document.getElementById('edit-trx-total').innerText = formatRp(currentEditTrxData.total);
-    }
-
-    function updateEditTrxItem(index, field, value) {
-      let val = parseFloat(value) || 0;
-      if (field === 'qty' && val < 1) val = 1;
-      currentEditTrxData.items[index][field] = val;
-      renderEditTrxModal();
-    }
-
-    function removeEditTrxItem(index) {
-      currentEditTrxData.items.splice(index, 1);
-      renderEditTrxModal();
-    }
-
-    function saveEditedTrx() {
-      const origTrxIndex = transactions.findIndex(t => t.id === currentEditTrxId);
-      if(origTrxIndex === -1) return;
-      const origTrx = transactions[origTrxIndex];
-
-      if (!currentEditTrxData.customerName || currentEditTrxData.customerName.trim() === '') {
-        document.getElementById('edit-customer-name-input').focus();
-        return customAlert("Nama Pelanggan wajib diisi!", "Validasi Gagal", "warning");
-      }
-
-      if(currentEditTrxData.items.length === 0) {
-        customConfirm("Semua item dihapus. Menyimpan akan menghapus total transaksi ini. Lanjutkan?", () => {
-          let updatedProducts = [...products];
-          origTrx.items.forEach(oldItem => {
-            let p = updatedProducts.find(p => p.id === oldItem.id);
-            if(p) p.stock += oldItem.qty;
-          });
-          products = updatedProducts;
-          localStorage.setItem('warhome_products', JSON.stringify(products));
-
-          transactions = transactions.filter(t => t.id !== currentEditTrxId);
-          localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
-          if (useFirebase && db && navigator.onLine) {
-            db.ref('products').set(products);
-            db.ref('transactions/' + currentEditTrxId).remove();
-          }
-
-          closeModal('edit-trx-modal');
-          renderHistory();
-          renderProducts();
-          if(typeof initChart === 'function') initChart();
-          customAlert("Transaksi berhasil dihapus karena item kosong.", "Dihapus", "success");
-        });
-        return;
-      }
-
-      let updatedProducts = [...products];
-      origTrx.items.forEach(oldItem => {
-        let p = updatedProducts.find(p => p.id === oldItem.id);
-        if(p) p.stock += oldItem.qty;
-      });
-      currentEditTrxData.items.forEach(newItem => {
-        let p = updatedProducts.find(p => p.id === newItem.id);
-        if(p) p.stock -= newItem.qty;
-      });
-
-      products = updatedProducts;
-      localStorage.setItem('warhome_products', JSON.stringify(products));
-      if (useFirebase && db && navigator.onLine) {
-        db.ref('products').set(products);
-      }
-
-      transactions[origTrxIndex] = currentEditTrxData;
-      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
-      if (useFirebase && db && navigator.onLine) {
-        db.ref('transactions/' + currentEditTrxData.id).set(currentEditTrxData);
-      }
-
-      closeModal('edit-trx-modal');
-      renderHistory();
-      renderProducts();
-      checkSession();
-      if(typeof initChart === 'function') initChart();
-      customAlert("Perubahan transaksi berhasil disimpan dan stok otomatis disesuaikan.", "Berhasil", "success");
-    }
-
-    function requestDeleteTransaction(trxId) {
-      targetDeleteTrxId = trxId;
-      document.getElementById('delete-trx-id').innerText = trxId;
-      document.getElementById('delete-pin-input').value = '';
-      document.getElementById('delete-pin-error').classList.add('hidden');
-      document.getElementById('delete-modal').classList.remove('hidden');
-    }
-
-    function confirmDeleteTransaction() {
-      const enteredPin = document.getElementById('delete-pin-input').value;
-      const errorMsg = document.getElementById('delete-pin-error');
-
-      if (enteredPin !== SECURITY_PIN) {
-        errorMsg.classList.remove('hidden');
-        return;
-      }
-
-      transactions = transactions.filter(t => t.id !== targetDeleteTrxId);
-      localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
-
-      if (useFirebase && db && navigator.onLine) {
-        db.ref('transactions/' + targetDeleteTrxId).remove();
-      }
-
-      closeModal('delete-modal');
-      renderHistory();
-      checkSession();
-      if (typeof initChart === 'function') initChart();
-      customAlert(`Transaksi ${targetDeleteTrxId} berhasil dihapus!`, "Dihapus", "success");
-    }
-
-    function setChartMetric(metric) {
-      currentChartMetric = metric;
-      ['revenue', 'profit', 'pnl'].forEach(m => {
-        const btn = document.getElementById(`metric-btn-${m}`);
-        if (btn) {
-          btn.className = m === metric ? "px-2 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold" : "px-2 py-1 rounded-md text-gray-600 hover:text-gray-900";
-        }
-      });
-      initChart();
-    }
-
-    function updateChartPeriod(period) {
-      currentChartPeriod = period;
-      ['daily','weekly','monthly','yearly'].forEach(p => {
-        const btn = document.getElementById(`chart-btn-${p}`);
-        if (btn) {
-          btn.className = p === period ? "px-2 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold" : "px-2 py-1 rounded-md text-gray-600 hover:text-gray-900";
-        }
-      });
-      initChart();
-    }
-
-    function getChartData(period) {
-      const labels = [];
-      const revenueData = [];
-      const profitData = [];
-      const costData = [];
-      const now = new Date();
-
-      if (period === 'daily') {
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(now);
-          d.setDate(now.getDate() - i);
-          labels.push(d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' }));
-          
-          let rev = 0; let profit = 0; let cost = 0;
-          transactions.filter(t => new Date(t.date).toDateString() === d.toDateString()).forEach(t => {
-            rev += (t.subtotal || 0);
-            cost += (t.totalHpp || 0);
-            profit += (t.profit !== undefined ? t.profit : (t.subtotal - (t.totalHpp || 0)));
-          });
-
-          revenueData.push(rev); profitData.push(profit); costData.push(cost);
-        }
-      } else if (period === 'weekly') {
-        for (let i = 3; i >= 0; i--) {
-          labels.push(`Minggu -${i}`);
-          revenueData.push(0); profitData.push(0); costData.push(0);
-        }
-      } else if (period === 'monthly') {
-        const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-        for (let i = 0; i < 12; i++) {
-          labels.push(months[i]);
-          let rev = 0; let profit = 0; let cost = 0;
-          transactions.filter(t => new Date(t.date).getMonth() === i && new Date(t.date).getFullYear() === now.getFullYear()).forEach(t => {
-            rev += (t.subtotal || 0);
-            cost += (t.totalHpp || 0);
-            profit += (t.profit !== undefined ? t.profit : (t.subtotal - (t.totalHpp || 0)));
-          });
-          revenueData.push(rev); profitData.push(profit); costData.push(cost);
-        }
-      } else if (period === 'yearly') {
-        const y = now.getFullYear();
-        for (let i = 2; i >= 0; i--) {
-          labels.push((y - i).toString());
-          let rev = 0; let profit = 0; let cost = 0;
-          transactions.filter(t => new Date(t.date).getFullYear() === (y - i)).forEach(t => {
-            rev += (t.subtotal || 0);
-            cost += (t.totalHpp || 0);
-            profit += (t.profit !== undefined ? t.profit : (t.subtotal - (t.totalHpp || 0)));
-          });
-          revenueData.push(rev); profitData.push(profit); costData.push(cost);
-        }
-      }
-
-      return { labels, revenueData, profitData, costData };
-    }
-
+    
+    function setChartMetric(m) { currentChartMetric = m; ['revenue','profit','pnl'].forEach(x => document.getElementById(`metric-btn-${x}`).className = x===m ? "px-2 py-1 rounded bg-white font-bold text-amber-800":"px-2 py-1 rounded text-gray-600"); initChart(); }
+    function updateChartPeriod(p) { currentChartPeriod = p; ['daily','weekly','monthly','yearly'].forEach(x => document.getElementById(`chart-btn-${x}`).className = x===p ? "px-2 py-1 rounded bg-white font-bold text-amber-800":"px-2 py-1 rounded text-gray-600"); initChart(); }
     function initChart() {
-      const canvas = document.getElementById('salesChart');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (myChart) myChart.destroy();
-
-      const { labels, revenueData, profitData, costData } = getChartData(currentChartPeriod);
-
-      let datasets = [];
-      let chartType = 'line';
-
-      if (currentChartMetric === 'revenue') {
-        datasets = [{
-          label: 'Pendapatan / Omset (Rp)',
-          data: revenueData,
-          borderColor: '#92400e',
-          backgroundColor: 'rgba(146, 64, 14, 0.1)',
-          fill: true,
-          tension: 0.3,
-          borderWidth: 2
-        }];
-      } else if (currentChartMetric === 'profit') {
-        datasets = [{
-          label: 'Laba Bersih Nyata (Rp)',
-          data: profitData,
-          borderColor: '#059669',
-          backgroundColor: 'rgba(5, 150, 105, 0.1)',
-          fill: true,
-          tension: 0.3,
-          borderWidth: 2
-        }];
-      } else if (currentChartMetric === 'pnl') {
-        chartType = 'bar';
-        datasets = [
-          { label: 'Pendapatan (Omset)', data: revenueData, backgroundColor: '#92400e', borderRadius: 4 },
-          { label: 'Total HPP / Modal', data: costData, backgroundColor: '#f59e0b', borderRadius: 4 },
-          { label: 'Laba Bersih', data: profitData, backgroundColor: '#10b981', borderRadius: 4 }
-        ];
+      if(!document.getElementById('salesChart')) return;
+      const ctx = document.getElementById('salesChart').getContext('2d'); if(myChart) myChart.destroy();
+      const labels = [], rev=[], prof=[], cost=[], now = new Date();
+      if(currentChartPeriod === 'daily') {
+        for(let i=6; i>=0; i--) { const d=new Date(now); d.setDate(now.getDate()-i); labels.push(d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric'})); let r=0,p=0,c=0; transactions.filter(t=>new Date(t.date).toDateString()===d.toDateString()).forEach(t=>{r+=t.subtotal;c+=t.totalHpp||0;p+=t.profit!==undefined?t.profit:t.subtotal-(t.totalHpp||0);}); rev.push(r);prof.push(p);cost.push(c); }
+      } else if (currentChartPeriod === 'monthly') {
+        const ms=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        for(let i=0; i<12; i++) { labels.push(ms[i]); let r=0,p=0,c=0; transactions.filter(t=>new Date(t.date).getMonth()===i && new Date(t.date).getFullYear()===now.getFullYear()).forEach(t=>{r+=t.subtotal;c+=t.totalHpp||0;p+=t.profit!==undefined?t.profit:t.subtotal-(t.totalHpp||0);}); rev.push(r);prof.push(p);cost.push(c); }
       }
-
-      myChart = new Chart(ctx, {
-        type: chartType,
-        data: { labels: labels, datasets: datasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: currentChartMetric === 'pnl', position: 'top' } },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: function(val) { return 'Rp ' + val.toLocaleString('id-ID'); } }
-            }
-          }
-        }
-      });
+      let ds = currentChartMetric==='revenue'?[{label:'Omset',data:rev,borderColor:'#92400e',backgroundColor:'rgba(146,64,14,0.1)',fill:true,tension:0.3}]:
+               currentChartMetric==='profit'?[{label:'Laba',data:prof,borderColor:'#059669',backgroundColor:'rgba(5,150,105,0.1)',fill:true,tension:0.3}]:
+               [{label:'Omset',data:rev,backgroundColor:'#92400e'},{label:'HPP',data:cost,backgroundColor:'#f59e0b'},{label:'Laba',data:prof,backgroundColor:'#10b981'}];
+      myChart = new Chart(ctx, { type: currentChartMetric==='pnl'?'bar':'line', data: {labels, datasets:ds}, options: {responsive:true, maintainAspectRatio:false} });
+    }
+    
+    function updateTopItemsCategory(cat) { topItemsCategoryFilter = cat; renderHistory(); }
+    function renderTopItemsChart(filtered) {
+      if(!document.getElementById('topItemsChart')) return;
+      const ctx = document.getElementById('topItemsChart').getContext('2d'); if(topItemsChart) topItemsChart.destroy();
+      const counts = {};
+      filtered.forEach(t => { if(t.items) t.items.forEach(i => { if(topItemsCategoryFilter!=='All' && i.category!==topItemsCategoryFilter) return; counts[i.name]=(counts[i.name]||0)+i.qty; }); });
+      const sorted = Object.keys(counts).map(name => ({name, count:counts[name]})).sort((a,b)=>b.count-a.count).slice(0,10);
+      topItemsChart = new Chart(ctx, { type: 'bar', data: { labels: sorted.map(i=>i.name), datasets: [{data: sorted.map(i=>i.count), backgroundColor: 'rgba(234,88,12,0.85)', borderRadius:4}] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}} } });
     }
 
+    // ================== EDIT/DELETE TRX ==================
+    function openEditTrxModal(id) {
+      const t = transactions.find(x => x.id === id); if(!t) return;
+      currentEditTrxId = id; currentEditTrxData = JSON.parse(JSON.stringify(t));
+      document.getElementById('edit-trx-id').innerText = id; document.getElementById('edit-customer-name-input').value = t.customerName||'';
+      renderEditTrxModal(); document.getElementById('edit-trx-modal').classList.remove('hidden');
+    }
+    function updateEditCustomerName(v) { if(currentEditTrxData) currentEditTrxData.customerName = v.trim(); }
+    function updateEditTrxItem(i, f, v) { let val = parseFloat(v)||0; if(f==='qty'&&val<1) val=1; currentEditTrxData.items[i][f] = val; renderEditTrxModal(); }
+    function removeEditTrxItem(i) { currentEditTrxData.items.splice(i,1); renderEditTrxModal(); }
+    function renderEditTrxModal() {
+      const c = document.getElementById('edit-trx-items-container');
+      if(!currentEditTrxData.items.length) c.innerHTML = `<div class="text-center text-red-500 text-sm">Item kosong. Simpan = Hapus.</div>`;
+      else c.innerHTML = currentEditTrxData.items.map((i, idx) => `
+        <div class="flex items-center gap-2 border p-2 bg-gray-50 rounded">
+          <div class="flex-1"><p class="text-sm font-bold">${i.name}</p>
+            <div class="flex gap-2 mt-1">
+              <input type="number" oninput="updateEditTrxItem(${idx},'qty',this.value)" value="${i.qty}" class="w-16 border rounded p-1 text-xs text-center" placeholder="Qty">
+              <input type="number" oninput="updateEditTrxItem(${idx},'hpp',this.value)" value="${i.hpp||0}" class="flex-1 border rounded p-1 text-xs text-right" placeholder="HPP">
+              <input type="number" oninput="updateEditTrxItem(${idx},'price',this.value)" value="${i.price}" class="flex-1 border rounded p-1 text-xs text-right" placeholder="Jual">
+            </div>
+          </div>
+          <button onclick="removeEditTrxItem(${idx})" class="text-red-500 p-2"><i class="fas fa-trash"></i></button>
+        </div>`).join('');
+      let sub=0, hpp=0; currentEditTrxData.items.forEach(i => { sub+=i.price*i.qty; hpp+=i.hpp*i.qty; });
+      currentEditTrxData.subtotal = sub; currentEditTrxData.totalHpp = hpp; currentEditTrxData.tax = Math.round(sub*0.11); currentEditTrxData.total = sub+currentEditTrxData.tax; currentEditTrxData.profit = sub-hpp;
+      document.getElementById('edit-trx-subtotal').innerText = formatRp(sub); document.getElementById('edit-trx-profit').innerText = formatRp(currentEditTrxData.profit); document.getElementById('edit-trx-total').innerText = formatRp(currentEditTrxData.total);
+    }
+    function saveEditedTrx() {
+      const idx = transactions.findIndex(t => t.id === currentEditTrxId); if(idx===-1) return;
+      if(!currentEditTrxData.customerName) return customAlert("Nama wajib!");
+      if(!currentEditTrxData.items.length) {
+        return customConfirm("Yakin hapus transaksi?", () => {
+          transactions[idx].items.forEach(old=>{let p=products.find(x=>x.id===old.id); if(p) p.stock+=old.qty;});
+          transactions = transactions.filter(t=>t.id!==currentEditTrxId);
+          localStorage.setItem('warhome_transactions', JSON.stringify(transactions)); localStorage.setItem('warhome_products', JSON.stringify(products));
+          if(useFirebase&&navigator.onLine) { db.ref('products').set(products); db.ref('transactions/'+currentEditTrxId).remove(); }
+          closeModal('edit-trx-modal'); renderHistory(); renderProducts(); initChart();
+        });
+      }
+      transactions[idx].items.forEach(old=>{let p=products.find(x=>x.id===old.id); if(p) p.stock+=old.qty;});
+      currentEditTrxData.items.forEach(nw=>{let p=products.find(x=>x.id===nw.id); if(p) p.stock-=nw.qty;});
+      transactions[idx] = currentEditTrxData;
+      localStorage.setItem('warhome_transactions', JSON.stringify(transactions)); localStorage.setItem('warhome_products', JSON.stringify(products));
+      if(useFirebase&&navigator.onLine) { db.ref('transactions/'+currentEditTrxId).set(currentEditTrxData); db.ref('products').set(products); }
+      closeModal('edit-trx-modal'); renderHistory(); renderProducts(); checkSession(); initChart(); customAlert("Berhasil disimpan!");
+    }
+    function requestDeleteTransaction(id) { targetDeleteTrxId = id; document.getElementById('delete-trx-id').innerText = id; document.getElementById('delete-pin-input').value=''; document.getElementById('delete-pin-error').classList.add('hidden'); document.getElementById('delete-modal').classList.remove('hidden'); }
+    function confirmDeleteTransaction() {
+      if(document.getElementById('delete-pin-input').value !== SECURITY_PIN) return document.getElementById('delete-pin-error').classList.remove('hidden');
+      transactions = transactions.filter(t => t.id !== targetDeleteTrxId); localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
+      if(useFirebase&&navigator.onLine) db.ref('transactions/'+targetDeleteTrxId).remove();
+      closeModal('delete-modal'); renderHistory(); checkSession(); initChart(); customAlert("Dihapus!");
+    }
+
+    // ================== PRODUCT & HPP MANAGEMENT ==================
     function renderProductTable() {
-      const tbody = document.getElementById('products-table-body');
-      
-      if(products.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">Belum ada data menu. Silakan tambahkan menu baru.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = products.map(p => `
-        <tr class="hover:bg-gray-50 transition">
-          <td class="p-3 text-lg">${categoryIcons[p.category] || '<i class="fas fa-box"></i>'}</td>
-          <td class="p-3 font-semibold text-gray-800">${p.name}</td>
-          <td class="p-3"><span class="px-2 py-0.5 bg-gray-100 text-xs rounded-full border border-gray-200">${p.category}</span></td>
-          <td class="p-3 text-right font-medium text-gray-600">${formatRp(p.hpp || 0)}</td>
-          <td class="p-3 text-right font-bold text-amber-800">${formatRp(p.price)}</td>
+      const tb = document.getElementById('products-table-body');
+      if(!products.length) return tb.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">Belum ada menu.</td></tr>`;
+      tb.innerHTML = products.map(p => `
+        <tr class="border-b hover:bg-gray-50">
+          <td class="p-3 text-lg">${categoryIcons[p.category]||''}</td><td class="p-3 font-semibold">${p.name}</td>
+          <td class="p-3"><span class="px-2 py-0.5 bg-gray-100 rounded-full text-xs">${p.category}</span></td>
+          <td class="p-3 text-right text-gray-600">${formatRp(p.hpp||0)}</td><td class="p-3 text-right font-bold text-amber-800">${formatRp(p.price)}</td>
           <td class="p-3 text-center">${p.stock}</td>
-          <td class="p-3 text-center space-x-2">
-            <button onclick="editProduct(${p.id})" class="text-blue-600 hover:text-blue-800 p-1"><i class="fas fa-edit"></i></button>
-            <button onclick="deleteProduct(${p.id})" class="text-red-600 hover:text-red-800 p-1"><i class="fas fa-trash"></i></button>
-          </td>
-        </tr>
-      `).join('');
+          <td class="p-3 text-center space-x-2"><button onclick="editProduct(${p.id})" class="text-blue-600"><i class="fas fa-edit"></i></button> <button onclick="deleteProduct(${p.id})" class="text-red-600"><i class="fas fa-trash"></i></button></td>
+        </tr>`).join('');
     }
-
-    function openProductModal(isEdit = false) {
-      if (!isEdit) {
-        document.getElementById('product-form').reset();
-        document.getElementById('prod-id').value = '';
-        document.getElementById('product-modal-title').innerText = "Tambah Menu Baru";
-      }
+    function openProductModal(isEdit=false) {
+      if(!isEdit) { document.getElementById('product-form').reset(); document.getElementById('prod-id').value = ''; document.getElementById('product-modal-title').innerText = "Tambah Menu"; }
+      hppIngredients = []; // reset HPP
       document.getElementById('product-modal').classList.remove('hidden');
     }
-
     function editProduct(id) {
-      const p = products.find(prod => prod.id === id);
-      if (!p) return;
-      document.getElementById('prod-id').value = p.id;
-      document.getElementById('prod-name').value = p.name;
-      document.getElementById('prod-category').value = p.category;
-      document.getElementById('prod-hpp').value = p.hpp || 0;
-      document.getElementById('prod-price').value = p.price;
-      document.getElementById('prod-stock').value = p.stock;
-      document.getElementById('product-modal-title').innerHTML = '<i class="fas fa-edit text-blue-600 mr-2"></i> Edit Menu Warhome';
-      openProductModal(true);
+      const p = products.find(x => x.id === id); if(!p) return;
+      ['id','name','category','hpp','price','stock'].forEach(k => document.getElementById(`prod-${k}`).value = p[k] || (k==='hpp'?0:''));
+      document.getElementById('product-modal-title').innerHTML = `<i class="fas fa-edit"></i> Edit Menu`; openProductModal(true);
     }
-
     function saveProduct(e) {
       e.preventDefault();
-      const id = document.getElementById('prod-id').value;
-      const name = document.getElementById('prod-name').value;
-      const category = document.getElementById('prod-category').value;
-      const hpp = parseFloat(document.getElementById('prod-hpp').value) || 0;
-      const price = parseFloat(document.getElementById('prod-price').value) || 0;
-      const stock = parseInt(document.getElementById('prod-stock').value) || 0;
-
-      let updatedProducts = [...products];
-
-      if (id) {
-        const index = updatedProducts.findIndex(p => p.id === parseInt(id));
-        if (index !== -1) {
-          updatedProducts[index] = { id: parseInt(id), name, category, hpp, price, stock };
-        }
-      } else {
-        const newId = updatedProducts.length ? Math.max(...updatedProducts.map(p => p.id)) + 1 : 1;
-        updatedProducts.push({ id: newId, name, category, hpp, price, stock });
-      }
-
-      products = updatedProducts;
+      const p = { id: parseInt(document.getElementById('prod-id').value), name: document.getElementById('prod-name').value, category: document.getElementById('prod-category').value, hpp: parseFloat(document.getElementById('prod-hpp').value)||0, price: parseFloat(document.getElementById('prod-price').value)||0, stock: parseInt(document.getElementById('prod-stock').value)||0 };
+      if(p.id) { const idx = products.findIndex(x=>x.id===p.id); if(idx!==-1) products[idx] = p; }
+      else { p.id = products.length ? Math.max(...products.map(x=>x.id))+1 : 1; products.push(p); }
       localStorage.setItem('warhome_products', JSON.stringify(products));
-
-      if (useFirebase && db && navigator.onLine) {
-        db.ref('products').set(updatedProducts);
-      } else {
-        renderProductTable();
-        renderProducts();
-      }
-      closeModal('product-modal');
-      customAlert("Data menu berhasil disingkronisasi dan disimpan!", "Sukses", "success");
+      if(useFirebase&&navigator.onLine) db.ref('products').set(products); else { renderProductTable(); renderProducts(); }
+      closeModal('product-modal'); customAlert("Tersimpan!");
+    }
+    function deleteProduct(id) {
+      customConfirm("Yakin hapus menu ini?", () => {
+        products = products.filter(x => x.id !== id); localStorage.setItem('warhome_products', JSON.stringify(products));
+        if(useFirebase&&navigator.onLine) db.ref('products').set(products); else { renderProductTable(); renderProducts(); }
+      });
     }
 
-    function deleteProduct(id) {
-      customConfirm("Yakin ingin menghapus menu ini dari daftar? Aksi ini tidak dapat dibatalkan.", () => {
-        const updatedProducts = products.filter(p => p.id !== id);
-        products = updatedProducts;
-        localStorage.setItem('warhome_products', JSON.stringify(products));
+    // === HPP CALCULATOR LOGIC ===
+    let hppIngredients = [];
+    let currentCalculatedHpp = 0;
 
-        if (useFirebase && db && navigator.onLine) {
-          db.ref('products').set(updatedProducts);
-        } else {
-          renderProductTable();
-          renderProducts();
-        }
-        customAlert("Menu berhasil dihapus.", "Dihapus", "success");
-      });
+    function openHppCalculator() {
+      if(hppIngredients.length === 0) addHppIngredientRow();
+      renderHppIngredients();
+      document.getElementById('hpp-calc-modal').classList.remove('hidden');
+    }
+    function addHppIngredientRow() {
+      hppIngredients.push({ name: '', price: '', packSize: '', portionSize: '' });
+      renderHppIngredients();
+    }
+    function removeHppIngredientRow(i) { hppIngredients.splice(i,1); renderHppIngredients(); }
+    function updateHppIngredient(i, f, v) {
+      if(f === 'name') hppIngredients[i][f] = v; else hppIngredients[i][f] = parseFloat(v)||0;
+      renderHppIngredients();
+    }
+    function renderHppIngredients() {
+      const c = document.getElementById('hpp-ingredients-container'); let total = 0;
+      if(!hppIngredients.length) c.innerHTML = '<div class="text-center text-gray-400 text-xs py-4">Belum ada bahan baku.</div>';
+      else c.innerHTML = hppIngredients.map((ing, i) => {
+        let cost = 0; if(ing.packSize > 0) cost = (ing.price / ing.packSize) * (ing.portionSize || 0);
+        total += cost;
+        return `
+          <div class="flex flex-col sm:flex-row items-end gap-2 p-3 bg-white border rounded-lg">
+            <div class="w-full sm:flex-1"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Nama Bahan</label><input type="text" value="${ing.name}" oninput="updateHppIngredient(${i}, 'name', this.value)" class="w-full border rounded p-1.5 text-xs outline-none" placeholder="Cth: Kopi Susu"></div>
+            <div class="w-full sm:w-28"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Harga Beli Kemasan (Rp)</label><input type="number" value="${ing.price}" oninput="updateHppIngredient(${i}, 'price', this.value)" class="w-full border rounded p-1.5 text-xs text-right outline-none"></div>
+            <div class="w-full sm:w-24"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Ukuran Kemasan</label><input type="number" value="${ing.packSize}" oninput="updateHppIngredient(${i}, 'packSize', this.value)" step="any" class="w-full border rounded p-1.5 text-xs text-right outline-none" placeholder="gr/ml"></div>
+            <div class="w-full sm:w-24"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Takaran per Porsi</label><input type="number" value="${ing.portionSize}" oninput="updateHppIngredient(${i}, 'portionSize', this.value)" step="any" class="w-full border rounded p-1.5 text-xs text-right outline-none" placeholder="gr/ml"></div>
+            <div class="w-full sm:w-28 text-right pb-1"><span class="text-[10px] font-semibold text-gray-500 block">Biaya Bahan</span><span class="text-xs font-bold">${formatRp(Math.round(cost))}</span></div>
+            <button onclick="removeHppIngredientRow(${i})" class="text-red-500 hover:text-white hover:bg-red-500 bg-red-50 p-2 rounded transition"><i class="fas fa-trash"></i></button>
+          </div>`;
+      }).join('');
+      currentCalculatedHpp = Math.round(total);
+      document.getElementById('hpp-calc-total').innerText = formatRp(currentCalculatedHpp);
+    }
+    function applyHppToProduct() {
+      document.getElementById('prod-hpp').value = currentCalculatedHpp || 0;
+      closeModal('hpp-calc-modal');
     }
   </script>
 </body>
