@@ -127,8 +127,8 @@
             <div class="flex justify-between text-gray-500"><span>PPN (11%)</span><span id="cart-tax">Rp 0</span></div>
             <div class="flex justify-between font-bold text-lg text-gray-800 pt-2 border-t"><span>Total Bayar</span><span id="cart-total" class="text-amber-800">Rp 0</span></div>
           </div>
-          <button onclick="processDirectCheckout()" id="btn-checkout" class="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-lg shadow transition flex items-center justify-center space-x-2">
-            <i class="fas fa-receipt"></i><span>Selesaikan Pesanan</span>
+          <button onclick="openPaymentModal()" id="btn-checkout" class="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-lg shadow transition flex items-center justify-center space-x-2">
+            <i class="fas fa-cash-register"></i><span>Pilih Pembayaran & Selesaikan</span>
           </button>
         </div>
       </div>
@@ -195,6 +195,7 @@
               <tr>
                 <th class="p-3">ID TRX</th>
                 <th class="p-3">Pelanggan</th>
+                <th class="p-3">Metode</th>
                 <th class="p-3">Waktu</th>
                 <th class="p-3">Rincian Item</th>
                 <th class="p-3 text-right">Total Omset</th>
@@ -285,6 +286,72 @@
     </div>
   </main>
 
+  <!-- MODAL PEMILIHAN METODE PEMBAYARAN -->
+  <div id="payment-method-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
+    <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-base text-gray-800"><i class="fas fa-wallet text-amber-700 mr-2"></i> Pilih Metode Pembayaran</h3>
+        <button onclick="closeModal('payment-method-modal')" class="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
+      </div>
+      <div class="space-y-3 pt-1">
+        <button onclick="selectPaymentMethod('Cash')" class="w-full p-4 border-2 border-amber-200 hover:border-amber-700 bg-amber-50/50 hover:bg-amber-50 rounded-xl flex items-center justify-between transition group">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-amber-700 text-white rounded-lg flex items-center justify-center font-bold text-lg"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="text-left">
+              <h4 class="font-bold text-sm text-gray-800 group-hover:text-amber-900">Tunai (Cash)</h4>
+              <p class="text-[11px] text-gray-500">Bayar langsung dengan uang kas fisik</p>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right text-amber-700 text-xs"></i>
+        </button>
+
+        <button onclick="selectPaymentMethod('QRIS')" class="w-full p-4 border-2 border-blue-200 hover:border-blue-600 bg-blue-50/50 hover:bg-blue-50 rounded-xl flex items-center justify-between transition group">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-lg"><i class="fas fa-qrcode"></i></div>
+            <div class="text-left">
+              <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-900">QRIS (QR Code)</h4>
+              <p class="text-[11px] text-gray-500">Scan QR Code dengan e-Wallet / M-Banking</p>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right text-blue-600 text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PEMBAYARAN QRIS / KASIR -->
+  <div id="qris-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
+    <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-base text-gray-800"><i class="fas fa-qrcode text-blue-600 mr-2"></i> Scan QRIS Pembayaran</h3>
+        <button onclick="closeQrisModal()" class="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 mb-1">Total Tagihan <span id="qris-customer-tag" class="font-semibold text-gray-800"></span></p>
+        <h2 id="qris-total-amount" class="text-xl font-bold text-amber-800">Rp 0</h2>
+      </div>
+      
+      <!-- Placeholder Gambar QR Code QRIS -->
+      <div class="bg-white border-2 border-dashed border-gray-300 p-3 rounded-xl inline-block shadow-inner">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=WARHOME_POS_PAYMENT_QRIS_SIMULATION" alt="QRIS QR Code" class="w-44 h-44 mx-auto rounded">
+        <div class="mt-2 text-[10px] text-gray-500 font-bold uppercase tracking-wider">NMID: ID1029384756382</div>
+      </div>
+
+      <!-- Timer Countdown QRIS -->
+      <div class="bg-blue-50 border border-blue-100 p-2.5 rounded-lg flex items-center justify-center space-x-2 text-xs text-blue-800">
+        <i class="fas fa-clock animate-pulse"></i>
+        <span>Menunggu Pembayaran: <strong id="qris-countdown">03:00</strong></span>
+      </div>
+
+      <div class="flex flex-col gap-2 pt-2 border-t">
+        <button onclick="simulateQrisSuccess()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition flex items-center justify-center space-x-1.5">
+          <i class="fas fa-check-circle"></i><span>Simulasi Pembayaran QRIS Sukses</span>
+        </button>
+        <button onclick="closeQrisModal()" class="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-xs rounded-lg">Batal</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CUSTOM ALERT MODAL -->
   <div id="alert-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-xs w-full p-6 shadow-2xl text-center space-y-4">
@@ -366,7 +433,6 @@
         <span id="edit-trx-id" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"></span>
       </h3>
       
-      <!-- Input Edit Nama Pelanggan -->
       <div class="mb-3">
         <label class="text-xs font-semibold text-gray-600 block mb-1">Nama Pelanggan / Meja <span class="text-red-500">*wajib</span></label>
         <input type="text" id="edit-customer-name-input" required oninput="updateEditCustomerName(this.value)" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
@@ -415,6 +481,7 @@
         <div class="space-y-0.5 text-[11px]">
           <div class="flex justify-between"><span>No: <span id="rec-id">TRX-000</span></span><span id="rec-date">00/00/0000</span></div>
           <div>Pelanggan: <span id="rec-customer" class="font-bold"></span></div>
+          <div>Pembayaran: <span id="rec-payment" class="font-bold">Cash</span></div>
           <div>Kasir: Operator Warhome</div>
         </div>
         <div class="border-b border-dashed border-black"></div>
@@ -514,6 +581,7 @@
     let currentChartMetric = 'revenue';
     let currentActiveTransaction = null;
     let currentPaperSize = localStorage.getItem('warhome_paper_size') || '58mm';
+    let qrisTimerInterval = null;
     
     let targetDeleteTrxId = null;
     let currentEditTrxId = null;
@@ -1014,18 +1082,76 @@
       document.getElementById('cart-total').innerText = formatRp(total);
     }
 
-    function processDirectCheckout() {
+    function openPaymentModal() {
       if (cart.length === 0) return customAlert("Keranjang belanja masih kosong!", "Gagal Checkout", "error");
       if (!session) return openOpenSessionModal();
 
       const customerNameInput = document.getElementById('customer-name-input');
       const customerName = customerNameInput ? customerNameInput.value.trim() : '';
 
-      // Validasi wajib isi nama pelanggan / meja
       if (!customerName) {
         customerNameInput.focus();
-        return customAlert("Nama Pelanggan atau Nomor Meja wajib diisi sebelum menyelesaikan pesanan!", "Validasi Gagal", "warning");
+        return customAlert("Nama Pelanggan atau Nomor Meja wajib diisi sebelum memilih pembayaran!", "Validasi Gagal", "warning");
       }
+
+      document.getElementById('payment-method-modal').classList.remove('hidden');
+    }
+
+    function selectPaymentMethod(method) {
+      closeModal('payment-method-modal');
+      
+      if (method === 'Cash') {
+        finalizeCheckout('Cash');
+      } else if (method === 'QRIS') {
+        openQrisModal();
+      }
+    }
+
+    function openQrisModal() {
+      const customerNameInput = document.getElementById('customer-name-input');
+      const customerName = customerNameInput ? customerNameInput.value.trim() : 'Umum';
+      
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const tax = Math.round(subtotal * 0.11);
+      const total = subtotal + tax;
+
+      document.getElementById('qris-customer-tag').innerText = `(${customerName})`;
+      document.getElementById('qris-total-amount').innerText = formatRp(total);
+
+      let timeLeft = 180; // 3 Menit
+      const countdownEl = document.getElementById('qris-countdown');
+      
+      if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+      
+      qrisTimerInterval = setInterval(() => {
+        let mins = Math.floor(timeLeft / 60);
+        let secs = timeLeft % 60;
+        countdownEl.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        if (timeLeft <= 0) {
+          clearInterval(qrisTimerInterval);
+          closeModal('qris-modal');
+          customAlert("Waktu pembayaran QRIS habis. Silakan buat ulang pesanan.", "Waktu Habis", "error");
+        }
+        timeLeft--;
+      }, 1000);
+
+      document.getElementById('qris-modal').classList.remove('hidden');
+    }
+
+    function closeQrisModal() {
+      if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+      closeModal('qris-modal');
+    }
+
+    function simulateQrisSuccess() {
+      if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+      closeModal('qris-modal');
+      finalizeCheckout('QRIS');
+    }
+
+    function finalizeCheckout(paymentMethod) {
+      const customerNameInput = document.getElementById('customer-name-input');
+      const customerName = customerNameInput ? customerNameInput.value.trim() : 'Umum';
 
       const totalHpp = cart.reduce((sum, item) => sum + ((item.hpp || 0) * item.qty), 0);
       const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
@@ -1038,6 +1164,7 @@
       const newTrx = {
         id: trxId,
         customerName: customerName,
+        paymentMethod: paymentMethod,
         date: new Date().toISOString(),
         items: [...cart],
         subtotal: subtotal,
@@ -1074,6 +1201,7 @@
       document.getElementById('rec-id').innerText = trx.id;
       document.getElementById('rec-date').innerText = new Date(trx.date).toLocaleDateString('id-ID') + ' ' + new Date(trx.date).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
       document.getElementById('rec-customer').innerText = trx.customerName || '-';
+      document.getElementById('rec-payment').innerText = trx.paymentMethod || 'Cash';
       
       document.getElementById('rec-items').innerHTML = trx.items.map(item => `
         <div>
@@ -1159,6 +1287,7 @@
       receiptText += `No  : ${trx.id}\n`;
       receiptText += `Tgl : ${new Date(trx.date).toLocaleDateString('id-ID')} ${new Date(trx.date).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}\n`;
       receiptText += `Pelanggan: ${trx.customerName || '-'}\n`;
+      receiptText += `Pembayaran: ${trx.paymentMethod || 'Cash'}\n`;
       receiptText += DIVIDER;
 
       trx.items.forEach(item => {
@@ -1242,16 +1371,21 @@
       const tbody = document.getElementById('history-table-body');
       
       if(filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">Belum ada transaksi di bulan/tahun ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Belum ada transaksi di bulan/tahun ini.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = filtered.map(t => {
         let p = t.profit !== undefined ? t.profit : (t.subtotal - (t.totalHpp || 0));
+        const paymentBadge = t.paymentMethod === 'QRIS' 
+          ? '<span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] rounded-full font-semibold">QRIS</span>' 
+          : '<span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full font-semibold">Cash</span>';
+        
         return `
           <tr class="hover:bg-gray-50 transition">
             <td class="p-3 font-bold text-xs">${t.id}</td>
             <td class="p-3 text-xs font-semibold text-gray-800">${t.customerName || '-'}</td>
+            <td class="p-3 text-xs">${paymentBadge}</td>
             <td class="p-3 text-xs text-gray-500">${new Date(t.date).toLocaleString('id-ID')}</td>
             <td class="p-3 text-xs leading-tight">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
             <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.subtotal)}</td>
