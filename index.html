@@ -27,19 +27,13 @@
       .print-58mm { width: 58mm !important; font-size: 10px !important; }
       .print-80mm { width: 80mm !important; font-size: 12px !important; }
       .no-print { display: none !important; }
-
-       /* Tambahkan dua baris ini agar warna dan gambar dipaksa keluar */
-     {
+      
+      {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      
-      body * { visibility: hidden; }
-      #receipt-modal-content, #receipt-modal-content * { visibility: visible; }
-      /* ... sisa kode print kamu ... */
     }
     
-    /* Custom Scrollbar for better UI */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
@@ -81,6 +75,9 @@
           <button onclick="switchTab('history')" id="tab-history" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition">
             <i class="fas fa-chart-line mr-1"></i> Riwayat
           </button>
+          <button onclick="switchTab('shift-history')" id="tab-shift-history" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition">
+            <i class="fas fa-clock-rotate-left mr-1"></i> Buka/Tutup Kasir
+          </button>
           <button onclick="switchTab('products')" id="tab-products" class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition">
             <i class="fas fa-utensils mr-1"></i> Menu
           </button>
@@ -113,7 +110,15 @@
           </h2>
           <button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700 font-medium">Reset</button>
         </div>
+        
+        <!-- Input Nama Pelanggan -->
+        <div class="px-4 pt-3 bg-gray-50">
+          <label class="text-[11px] font-bold text-gray-600 block mb-1"><i class="fas fa-user mr-1 text-amber-700"></i> Nama Pelanggan / Meja</label>
+          <input type="text" id="customer-name-input" placeholder="Contoh: Bpk. Budi / Meja 05" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
+        </div>
+
         <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-3 divide-y divide-gray-100"></div>
+        
         <div class="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl space-y-3">
           <div class="space-y-1.5 text-sm">
             <div class="flex justify-between text-gray-500"><span>Subtotal (Omset)</span><span id="cart-subtotal">Rp 0</span></div>
@@ -127,10 +132,8 @@
       </div>
     </div>
 
-    <!-- TAB 2: RIWAYAT & GRAFIK -->
+    <!-- TAB 2: RIWAYAT & GRAFIK TRANSAKSI -->
     <div id="view-history" class="hidden space-y-6">
-      
-      <!-- CARD GRAFIK LENGKAP -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b pb-3">
           <div>
@@ -139,16 +142,12 @@
             </h2>
             <p class="text-xs text-gray-500">Visualisasi omset pendapatan dan laba bersih nyata Warhome</p>
           </div>
-          
           <div class="flex flex-wrap gap-2 items-center">
-            <!-- TOGGLE METRIK GRAFIK -->
             <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold">
               <button onclick="setChartMetric('revenue')" id="metric-btn-revenue" class="px-2.5 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold">Omset</button>
               <button onclick="setChartMetric('profit')" id="metric-btn-profit" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Laba Bersih</button>
               <button onclick="setChartMetric('pnl')" id="metric-btn-pnl" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Laba Rugi (P&L)</button>
             </div>
-
-            <!-- TOGGLE PERIODE WAKTU -->
             <div class="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold">
               <button onclick="updateChartPeriod('daily')" id="chart-btn-daily" class="px-2.5 py-1 rounded-md bg-white shadow-sm text-amber-800 font-bold">Harian</button>
               <button onclick="updateChartPeriod('weekly')" id="chart-btn-weekly" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900">Mingguan</button>
@@ -157,11 +156,9 @@
             </div>
           </div>
         </div>
-
         <div class="relative h-64 sm:h-80 w-full"><canvas id="salesChart"></canvas></div>
       </div>
 
-      <!-- CARD REKAP & TABEL TRANSAKSI -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
           <div>
@@ -195,6 +192,7 @@
             <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
               <tr>
                 <th class="p-3">ID TRX</th>
+                <th class="p-3">Pelanggan</th>
                 <th class="p-3">Waktu</th>
                 <th class="p-3">Rincian Item</th>
                 <th class="p-3 text-right">Total Omset</th>
@@ -208,7 +206,59 @@
       </div>
     </div>
 
-    <!-- TAB 3: KELOLA MENU -->
+    <!-- TAB 3: RIWAYAT BUKA TUTUP KASIR (SHIFT HISTORY) -->
+    <div id="view-shift-history" class="hidden space-y-6">
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 class="font-bold text-lg text-gray-800 flex items-center">
+            <i class="fas fa-clock-rotate-left text-amber-700 mr-2"></i> Riwayat Buka & Tutup Kasir (Shift History)
+          </h2>
+          <p class="text-xs text-gray-500">Arsip lengkap pembukaan shift kasir, modal, total penjualan, kas aktual, dan analisis selisih</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="renderShiftHistory()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow-sm">
+            <i class="fas fa-sync-alt mr-1.5"></i> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+          <span class="text-xs text-amber-800 font-semibold block">Total Shift Tercatat</span>
+          <span id="stat-total-shifts" class="text-xl font-bold text-amber-900">0 Shift</span>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+          <span class="text-xs text-emerald-800 font-semibold block">Akumulasi Penjualan Shift</span>
+          <span id="stat-total-shift-sales" class="text-xl font-bold text-emerald-900">Rp 0</span>
+        </div>
+        <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+          <span class="text-xs text-blue-800 font-semibold block">Status Sesi Aktif</span>
+          <span id="stat-active-shift-status" class="text-xl font-bold text-blue-900">Tidak Aktif</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
+              <tr>
+                <th class="p-3">ID Shift</th>
+                <th class="p-3">Waktu Buka & Tutup</th>
+                <th class="p-3 text-right">Modal Awal</th>
+                <th class="p-3 text-right">Penjualan</th>
+                <th class="p-3 text-right">Kas Ekspektasi</th>
+                <th class="p-3 text-right">Kas Aktual</th>
+                <th class="p-3 text-right">Selisih</th>
+                <th class="p-3 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="shift-history-table-body" class="divide-y"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: KELOLA MENU -->
     <div id="view-products" class="hidden space-y-6">
       <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div><h2 class="font-bold text-lg text-gray-800">Kelola Menu</h2><p class="text-xs text-gray-500">Tambah, edit HPP, atau hapus menu Warhome</p></div>
@@ -313,11 +363,16 @@
         <span><i class="fas fa-edit text-blue-600 mr-2"></i> Edit Transaksi</span>
         <span id="edit-trx-id" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"></span>
       </h3>
-      <p class="text-xs text-gray-500 mb-3">Ubah jumlah, harga jual, HPP, atau hapus item. Stok akan disesuaikan otomatis ke sistem.</p>
       
-      <div id="edit-trx-items-container" class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1 scrollbar-hide">
-        <!-- Input fields will be injected here -->
+      <!-- Input Edit Nama Pelanggan -->
+      <div class="mb-3">
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Nama Pelanggan / Meja</label>
+        <input type="text" id="edit-customer-name-input" oninput="updateEditCustomerName(this.value)" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
       </div>
+
+      <p class="text-xs text-gray-500 mb-2">Ubah jumlah, harga jual, HPP, atau hapus item. Stok akan disesuaikan otomatis ke sistem.</p>
+      
+      <div id="edit-trx-items-container" class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1 scrollbar-hide"></div>
 
       <div class="border-t pt-3 space-y-1.5 text-sm mb-4">
         <div class="flex justify-between text-gray-500"><span>Subtotal (Omset)</span><span id="edit-trx-subtotal">Rp 0</span></div>
@@ -357,6 +412,7 @@
         </div>
         <div class="space-y-0.5 text-[11px]">
           <div class="flex justify-between"><span>No: <span id="rec-id">TRX-000</span></span><span id="rec-date">00/00/0000</span></div>
+          <div>Pelanggan: <span id="rec-customer" class="font-bold">Umum</span></div>
           <div>Kasir: Operator Warhome</div>
         </div>
         <div class="border-b border-dashed border-black"></div>
@@ -444,11 +500,12 @@
         useFirebase = false;
     }
 
-    // Default Products dikosongkan sesuai permintaan
     let products = JSON.parse(localStorage.getItem('warhome_products')) || [];
     let cart = [];
     let transactions = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
     let session = JSON.parse(localStorage.getItem('warhome_session')) || null;
+    let cashSessions = JSON.parse(localStorage.getItem('warhome_cash_sessions')) || [];
+    
     let selectedCategory = 'All';
     let myChart = null;
     let currentChartPeriod = 'daily';
@@ -472,7 +529,6 @@
       'Snack': '<i class="fas fa-cookie-bite text-yellow-600"></i>'
     };
 
-    // FUNGSI KUSTOM UNTUK MENGGANTIKAN ALERT DAN CONFIRM
     function customAlert(message, title = "Perhatian", type = "info") {
       document.getElementById('alert-title').innerText = title;
       document.getElementById('alert-message').innerText = message;
@@ -525,13 +581,11 @@
       if (size === '80mm') {
         btn80.className = "px-2.5 py-1 rounded-md bg-amber-800 text-white shadow-sm transition";
         btn58.className = "px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900 transition";
-        
         modalContent.className = "bg-white text-black p-3 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-80mm";
         modalCard.className = "bg-white rounded-xl max-w-md w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200";
       } else {
         btn58.className = "px-2.5 py-1 rounded-md bg-amber-800 text-white shadow-sm transition";
         btn80.className = "px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-900 transition";
-        
         modalContent.className = "bg-white text-black p-2 font-mono text-xs overflow-y-auto space-y-3 border-dashed border-gray-300 print-58mm";
         modalCard.className = "bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200";
       }
@@ -552,19 +606,33 @@
 
     function syncLocalDataToCloud() {
         if (!useFirebase || !navigator.onLine) return;
-        const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
-        if (localTrx.length === 0) return;
         
-        firebase.database().ref('transactions').once('value').then(snapshot => {
-            const cloudData = snapshot.val() || {};
-            localTrx.forEach(trx => {
-                if (!cloudData[trx.id]) {
-                    firebase.database().ref('transactions/' + trx.id).set(trx);
-                }
+        const localTrx = JSON.parse(localStorage.getItem('warhome_transactions')) || [];
+        if (localTrx.length > 0) {
+            firebase.database().ref('transactions').once('value').then(snapshot => {
+                const cloudData = snapshot.val() || {};
+                localTrx.forEach(trx => {
+                    if (!cloudData[trx.id]) {
+                        firebase.database().ref('transactions/' + trx.id).set(trx);
+                    }
+                });
+                localStorage.removeItem('warhome_transactions');
             });
-            localStorage.removeItem('warhome_transactions');
-            updateCloudBadge();
-        }).catch(err => console.error("Sinkronisasi gagal:", err));
+        }
+
+        const localSessions = JSON.parse(localStorage.getItem('warhome_cash_sessions')) || [];
+        if (localSessions.length > 0) {
+            firebase.database().ref('cash_sessions').once('value').then(snapshot => {
+                const cloudData = snapshot.val() || {};
+                localSessions.forEach(cs => {
+                    if (!cloudData[cs.id]) {
+                        firebase.database().ref('cash_sessions/' + cs.id).set(cs);
+                    }
+                });
+                localStorage.removeItem('warhome_cash_sessions');
+            });
+        }
+        updateCloudBadge();
     }
 
     window.addEventListener('online', () => { syncLocalDataToCloud(); updateCloudBadge(); });
@@ -620,15 +688,26 @@
         else localStorage.removeItem('warhome_session');
         checkSession();
       });
+
+      db.ref('cash_sessions').on('value', (snapshot) => {
+        const val = snapshot.val();
+        cashSessions = val ? Object.values(val).sort((a, b) => new Date(b.closeTime || b.startTime) - new Date(a.closeTime || a.startTime)) : [];
+        localStorage.setItem('warhome_cash_sessions', JSON.stringify(cashSessions));
+        if (!document.getElementById('view-shift-history').classList.contains('hidden')) {
+          renderShiftHistory();
+        }
+      });
     }
 
     function switchTab(tab) {
       document.getElementById('view-pos').classList.add('hidden');
       document.getElementById('view-history').classList.add('hidden');
+      document.getElementById('view-shift-history').classList.add('hidden');
       document.getElementById('view-products').classList.add('hidden');
 
       document.getElementById('tab-pos').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
       document.getElementById('tab-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
+      document.getElementById('tab-shift-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
       document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 transition cursor-pointer";
 
       if(tab === 'pos') {
@@ -641,6 +720,10 @@
         populateYearFilter();
         renderHistory();
         initChart();
+      } else if(tab === 'shift-history') {
+        document.getElementById('view-shift-history').classList.remove('hidden');
+        document.getElementById('tab-shift-history').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition cursor-pointer";
+        renderShiftHistory();
       } else if(tab === 'products') {
         document.getElementById('view-products').classList.remove('hidden');
         document.getElementById('tab-products').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950 text-amber-100 transition cursor-pointer";
@@ -684,7 +767,14 @@
 
     function startSession() {
       const cash = parseFloat(document.getElementById('start-cash-input').value) || 0;
-      session = { startTime: new Date().toISOString(), startCash: cash };
+      const shiftId = 'SHIFT-' + Date.now();
+      session = { 
+        id: shiftId,
+        startTime: new Date().toISOString(), 
+        startCash: cash,
+        status: 'OPEN'
+      };
+      
       localStorage.setItem('warhome_session', JSON.stringify(session));
 
       if (useFirebase && db && navigator.onLine) {
@@ -722,14 +812,78 @@
     }
 
     function closeSession() {
-      localStorage.removeItem('warhome_session');
-      session = null;
+      if (!session) return;
+      const actualCash = parseFloat(document.getElementById('actual-cash-input').value) || 0;
+      const sessionSales = transactions
+        .filter(t => new Date(t.date) >= new Date(session.startTime))
+        .reduce((sum, t) => sum + (t.total || 0), 0);
+      
+      const expectedCash = (session.startCash || 0) + sessionSales;
+      const discrepancy = actualCash - expectedCash;
+
+      const closedShift = {
+        id: session.id || ('SHIFT-' + Date.now()),
+        startTime: session.startTime,
+        closeTime: new Date().toISOString(),
+        startCash: session.startCash,
+        totalSales: sessionSales,
+        expectedCash: expectedCash,
+        actualCash: actualCash,
+        discrepancy: discrepancy,
+        status: 'CLOSED'
+      };
+
+      cashSessions.unshift(closedShift);
+      localStorage.setItem('warhome_cash_sessions', JSON.stringify(cashSessions));
+
       if (useFirebase && db && navigator.onLine) {
+        db.ref('cash_sessions/' + closedShift.id).set(closedShift);
         db.ref('session').remove();
       }
+
+      localStorage.removeItem('warhome_session');
+      session = null;
       checkSession();
       closeModal('close-session-modal');
-      customAlert("Sesi kasir berhasil ditutup. Laporan tersimpan di Riwayat.", "Sesi Ditutup", "success");
+      customAlert(`Sesi kasir berhasil ditutup. Selisih kas: ${formatRp(discrepancy)}`, "Sesi Ditutup", "success");
+    }
+
+    function renderShiftHistory() {
+      const tbody = document.getElementById('shift-history-table-body');
+      
+      const totalShifts = cashSessions.length;
+      const totalShiftSales = cashSessions.reduce((sum, cs) => sum + (cs.totalSales || 0), 0);
+
+      document.getElementById('stat-total-shifts').innerText = `${totalShifts} Shift`;
+      document.getElementById('stat-total-shift-sales').innerText = formatRp(totalShiftSales);
+      document.getElementById('stat-active-shift-status').innerText = session ? 'Aktif' : 'Tidak Aktif';
+
+      if (totalShifts === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Belum ada riwayat buka tutup kasir.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = cashSessions.map(cs => {
+        const diffColor = cs.discrepancy > 0 ? 'text-emerald-700 font-bold' : (cs.discrepancy < 0 ? 'text-red-600 font-bold' : 'text-gray-700');
+        const diffText = cs.discrepancy > 0 ? `+${formatRp(cs.discrepancy)}` : formatRp(cs.discrepancy);
+        return `
+          <tr class="hover:bg-gray-50 transition">
+            <td class="p-3 font-bold text-xs">${cs.id}</td>
+            <td class="p-3 text-xs text-gray-500">
+              Buka: ${new Date(cs.startTime).toLocaleString('id-ID')}<br>
+              Tutup: ${cs.closeTime ? new Date(cs.closeTime).toLocaleString('id-ID') : '-'}
+            </td>
+            <td class="p-3 text-right text-xs">${formatRp(cs.startCash)}</td>
+            <td class="p-3 text-right text-xs font-semibold text-amber-800">${formatRp(cs.totalSales)}</td>
+            <td class="p-3 text-right text-xs">${formatRp(cs.expectedCash)}</td>
+            <td class="p-3 text-right text-xs font-bold">${formatRp(cs.actualCash)}</td>
+            <td class="p-3 text-right text-xs ${diffColor}">${diffText}</td>
+            <td class="p-3 text-center">
+              <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded-full font-semibold">Tutup</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function renderCategoryFilters() {
@@ -797,7 +951,6 @@
         if (existing.qty >= prod.stock) return customAlert("Mencapai batas maksimal stok yang tersedia!", "Batas Stok", "warning");
         existing.qty++;
       } else {
-        // Simpan hpp terkini saat menambah ke keranjang
         cart.push({ ...prod, hpp: prod.hpp || 0, qty: 1 });
       }
       renderCart();
@@ -820,6 +973,8 @@
 
     function clearCart() {
       cart = [];
+      const custInput = document.getElementById('customer-name-input');
+      if(custInput) custInput.value = '';
       renderCart();
     }
 
@@ -861,19 +1016,20 @@
       if (cart.length === 0) return customAlert("Keranjang belanja masih kosong!", "Gagal Checkout", "error");
       if (!session) return openOpenSessionModal();
 
-      // Kalkulasi Harga Pokok Penjualan, Subtotal (Omset), Tax, Total
+      const customerNameInput = document.getElementById('customer-name-input');
+      const customerName = customerNameInput && customerNameInput.value.trim() !== '' ? customerNameInput.value.trim() : 'Umum';
+
       const totalHpp = cart.reduce((sum, item) => sum + ((item.hpp || 0) * item.qty), 0);
       const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
       const tax = Math.round(subtotal * 0.11);
       const total = subtotal + tax;
-      
-      // Profit = Subtotal (Omset Murni tanpa Pajak) dikurangi Total HPP
       const profit = subtotal - totalHpp;
       
       const trxId = 'TRX-' + Date.now().toString().slice(-6);
 
       const newTrx = {
         id: trxId,
+        customerName: customerName,
         date: new Date().toISOString(),
         items: [...cart],
         subtotal: subtotal,
@@ -909,6 +1065,7 @@
       currentActiveTransaction = trx;
       document.getElementById('rec-id').innerText = trx.id;
       document.getElementById('rec-date').innerText = new Date(trx.date).toLocaleDateString('id-ID') + ' ' + new Date(trx.date).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+      document.getElementById('rec-customer').innerText = trx.customerName || 'Umum';
       
       document.getElementById('rec-items').innerHTML = trx.items.map(item => `
         <div>
@@ -993,6 +1150,7 @@
       receiptText += DIVIDER;
       receiptText += `No  : ${trx.id}\n`;
       receiptText += `Tgl : ${new Date(trx.date).toLocaleDateString('id-ID')} ${new Date(trx.date).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}\n`;
+      receiptText += `Pelanggan: ${trx.customerName || 'Umum'}\n`;
       receiptText += DIVIDER;
 
       trx.items.forEach(item => {
@@ -1060,7 +1218,7 @@
         return matchYear && matchMonth;
       });
 
-      const totalRev = filtered.reduce((s, t) => s + (t.subtotal || 0), 0); // Omset = Subtotal (tanpa tax)
+      const totalRev = filtered.reduce((s, t) => s + (t.subtotal || 0), 0);
       const totalProfit = filtered.reduce((s, t) => {
           let p = t.profit;
           if (p === undefined) p = t.subtotal - (t.totalHpp || 0);
@@ -1076,7 +1234,7 @@
       const tbody = document.getElementById('history-table-body');
       
       if(filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400">Belum ada transaksi di bulan/tahun ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">Belum ada transaksi di bulan/tahun ini.</td></tr>`;
         return;
       }
 
@@ -1085,6 +1243,7 @@
         return `
           <tr class="hover:bg-gray-50 transition">
             <td class="p-3 font-bold text-xs">${t.id}</td>
+            <td class="p-3 text-xs font-semibold text-gray-800">${t.customerName || 'Umum'}</td>
             <td class="p-3 text-xs text-gray-500">${new Date(t.date).toLocaleString('id-ID')}</td>
             <td class="p-3 text-xs leading-tight">${t.items ? t.items.map(i => `${i.name} (x${i.qty})`).join(', ') : '-'}</td>
             <td class="p-3 text-right font-bold text-xs text-amber-800">${formatRp(t.subtotal)}</td>
@@ -1105,17 +1264,22 @@
       }).join('');
     }
 
-    // FUNGSI EDIT TRANSAKSI PENUH (FULL EDIT)
     function openEditTrxModal(trxId) {
       const trx = transactions.find(t => t.id === trxId);
       if(!trx) return;
       currentEditTrxId = trxId;
-      // Duplikasi dalam memori (Deep Clone) agar data asli tak berubah sebelum disimpan
       currentEditTrxData = JSON.parse(JSON.stringify(trx));
       
       document.getElementById('edit-trx-id').innerText = trxId;
+      document.getElementById('edit-customer-name-input').value = trx.customerName || 'Umum';
       renderEditTrxModal();
       document.getElementById('edit-trx-modal').classList.remove('hidden');
+    }
+
+    function updateEditCustomerName(val) {
+      if (currentEditTrxData) {
+        currentEditTrxData.customerName = val.trim() !== '' ? val.trim() : 'Umum';
+      }
     }
 
     function renderEditTrxModal() {
@@ -1150,7 +1314,6 @@
         `).join('');
       }
 
-      // Hitung ulang semua nominal di transaksi hasil edit
       let subtotal = 0;
       let totalHpp = 0;
       currentEditTrxData.items.forEach(item => {
@@ -1173,7 +1336,7 @@
 
     function updateEditTrxItem(index, field, value) {
       let val = parseFloat(value) || 0;
-      if (field === 'qty' && val < 1) val = 1; // Mencegah qty < 1 lewat input manual. Gunakan tombol hapus.
+      if (field === 'qty' && val < 1) val = 1;
       currentEditTrxData.items[index][field] = val;
       renderEditTrxModal();
     }
@@ -1188,10 +1351,8 @@
       if(origTrxIndex === -1) return;
       const origTrx = transactions[origTrxIndex];
 
-      // Skenario jika semua barang dihapus
       if(currentEditTrxData.items.length === 0) {
         customConfirm("Semua item dihapus. Menyimpan akan menghapus total transaksi ini. Lanjutkan?", () => {
-          // Kembalikan stok seperti semula
           let updatedProducts = [...products];
           origTrx.items.forEach(oldItem => {
             let p = updatedProducts.find(p => p.id === oldItem.id);
@@ -1200,7 +1361,6 @@
           products = updatedProducts;
           localStorage.setItem('warhome_products', JSON.stringify(products));
 
-          // Proses hapus permanen transaksi
           transactions = transactions.filter(t => t.id !== currentEditTrxId);
           localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
           if (useFirebase && db && navigator.onLine) {
@@ -1217,15 +1377,11 @@
         return;
       }
 
-      // Skenario Simpan Normal: 1. Penyesuaian Stok
       let updatedProducts = [...products];
-      
-      // Kembalikan stok lama dulu ke sistem
       origTrx.items.forEach(oldItem => {
         let p = updatedProducts.find(p => p.id === oldItem.id);
         if(p) p.stock += oldItem.qty;
       });
-      // Potong stok dengan jumlah barang yang baru diedit
       currentEditTrxData.items.forEach(newItem => {
         let p = updatedProducts.find(p => p.id === newItem.id);
         if(p) p.stock -= newItem.qty;
@@ -1237,7 +1393,6 @@
         db.ref('products').set(products);
       }
 
-      // 2. Simpan Transaksi yang Telah Direvisi
       transactions[origTrxIndex] = currentEditTrxData;
       localStorage.setItem('warhome_transactions', JSON.stringify(transactions));
       if (useFirebase && db && navigator.onLine) {
@@ -1246,10 +1401,9 @@
 
       closeModal('edit-trx-modal');
       renderHistory();
-      renderProducts(); // Refresh tampilan stok kasir
+      renderProducts();
       checkSession();
       if(typeof initChart === 'function') initChart();
-      
       customAlert("Perubahan transaksi berhasil disimpan dan stok otomatis disesuaikan.", "Berhasil", "success");
     }
 
@@ -1284,7 +1438,6 @@
       customAlert(`Transaksi ${targetDeleteTrxId} berhasil dihapus!`, "Dihapus", "success");
     }
 
-    // KONTROL METRIK GRAFIK 
     function setChartMetric(metric) {
       currentChartMetric = metric;
       ['revenue', 'profit', 'pnl'].forEach(m => {
@@ -1322,7 +1475,7 @@
           
           let rev = 0; let profit = 0; let cost = 0;
           transactions.filter(t => new Date(t.date).toDateString() === d.toDateString()).forEach(t => {
-            rev += (t.subtotal || 0); // Omset = subtotal
+            rev += (t.subtotal || 0);
             cost += (t.totalHpp || 0);
             profit += (t.profit !== undefined ? t.profit : (t.subtotal - (t.totalHpp || 0)));
           });
@@ -1397,42 +1550,19 @@
       } else if (currentChartMetric === 'pnl') {
         chartType = 'bar';
         datasets = [
-          {
-            label: 'Pendapatan (Omset)',
-            data: revenueData,
-            backgroundColor: '#92400e',
-            borderRadius: 4
-          },
-          {
-            label: 'Total HPP / Modal',
-            data: costData,
-            backgroundColor: '#f59e0b',
-            borderRadius: 4
-          },
-          {
-            label: 'Laba Bersih',
-            data: profitData,
-            backgroundColor: '#10b981',
-            borderRadius: 4
-          }
+          { label: 'Pendapatan (Omset)', data: revenueData, backgroundColor: '#92400e', borderRadius: 4 },
+          { label: 'Total HPP / Modal', data: costData, backgroundColor: '#f59e0b', borderRadius: 4 },
+          { label: 'Laba Bersih', data: profitData, backgroundColor: '#10b981', borderRadius: 4 }
         ];
       }
 
       myChart = new Chart(ctx, {
         type: chartType,
-        data: {
-          labels: labels,
-          datasets: datasets
-        },
+        data: { labels: labels, datasets: datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { 
-            legend: { 
-              display: currentChartMetric === 'pnl',
-              position: 'top'
-            } 
-          },
+          plugins: { legend: { display: currentChartMetric === 'pnl', position: 'top' } },
           scales: {
             y: {
               beginAtZero: true,
