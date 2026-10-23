@@ -27,6 +27,16 @@
       .print-58mm { width: 58mm !important; font-size: 10px !important; }
       .print-80mm { width: 80mm !important; font-size: 12px !important; }
       .no-print { display: none !important; }
+
+       /* Tambahkan dua baris ini agar warna dan gambar dipaksa keluar */
+     {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      body * { visibility: hidden; }
+      #receipt-modal-content, #receipt-modal-content * { visibility: visible; }
+      /* ... sisa kode print kamu ... */
     }
     
     /* Custom Scrollbar for better UI */
