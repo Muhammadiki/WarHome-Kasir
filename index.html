@@ -990,7 +990,7 @@
       renderEditTrxModal(); document.getElementById('edit-trx-modal').classList.remove('hidden');
     }
     function updateEditCustomerName(v) { if(currentEditTrxData) currentEditTrxData.customerName = v.trim(); }
-    function updateEditTrxItem(i, f, v) { let val = parseFloat(v)||0; if(f==='qty'&&val<1) val=1; currentEditTrxData.items[i][f] = val; renderEditTrxModal(); }
+    function updateEditTrxItem(i, f, v) { let val = parseFloat(v)||0; if(f==='qty'&&val<1) val=1; currentEditTrxData.items[i][f] = val; recalculateEditTrxTotals(); }
     function removeEditTrxItem(i) { currentEditTrxData.items.splice(i,1); renderEditTrxModal(); }
     function renderEditTrxModal() {
       const c = document.getElementById('edit-trx-items-container');
@@ -1006,6 +1006,10 @@
           </div>
           <button onclick="removeEditTrxItem(${idx})" class="text-red-500 p-2"><i class="fas fa-trash"></i></button>
         </div>`).join('');
+      recalculateEditTrxTotals();
+    }
+    function recalculateEditTrxTotals() {
+      if (!currentEditTrxData) return;
       let sub=0, hpp=0; currentEditTrxData.items.forEach(i => { sub+=i.price*i.qty; hpp+=i.hpp*i.qty; });
       currentEditTrxData.subtotal = sub; currentEditTrxData.totalHpp = hpp; currentEditTrxData.tax = Math.round(sub*0.11); currentEditTrxData.total = sub+currentEditTrxData.tax; currentEditTrxData.profit = sub-hpp;
       document.getElementById('edit-trx-subtotal').innerText = formatRp(sub); document.getElementById('edit-trx-profit').innerText = formatRp(currentEditTrxData.profit); document.getElementById('edit-trx-total').innerText = formatRp(currentEditTrxData.total);
@@ -1092,26 +1096,36 @@
     function removeHppIngredientRow(i) { hppIngredients.splice(i,1); renderHppIngredients(); }
     function updateHppIngredient(i, f, v) {
       if(f === 'name') hppIngredients[i][f] = v; else hppIngredients[i][f] = parseFloat(v)||0;
-      renderHppIngredients();
+      recalculateHppTotals();
     }
-    function renderHppIngredients() {
-      const c = document.getElementById('hpp-ingredients-container'); let total = 0;
-      if(!hppIngredients.length) c.innerHTML = '<div class="text-center text-gray-400 text-xs py-4">Belum ada bahan baku.</div>';
-      else c.innerHTML = hppIngredients.map((ing, i) => {
+    function recalculateHppTotals() {
+      let total = 0;
+      hppIngredients.forEach((ing, i) => {
         let cost = 0; if(ing.packSize > 0) cost = (ing.price / ing.packSize) * (ing.portionSize || 0);
         total += cost;
+        const costEl = document.getElementById(`hpp-cost-${i}`);
+        if (costEl) costEl.innerText = formatRp(Math.round(cost));
+      });
+      currentCalculatedHpp = Math.round(total);
+      const totalEl = document.getElementById('hpp-calc-total');
+      if (totalEl) totalEl.innerText = formatRp(currentCalculatedHpp);
+    }
+    function renderHppIngredients() {
+      const c = document.getElementById('hpp-ingredients-container');
+      if(!hppIngredients.length) { c.innerHTML = '<div class="text-center text-gray-400 text-xs py-4">Belum ada bahan baku.</div>'; recalculateHppTotals(); return; }
+      c.innerHTML = hppIngredients.map((ing, i) => {
+        let cost = 0; if(ing.packSize > 0) cost = (ing.price / ing.packSize) * (ing.portionSize || 0);
         return `
           <div class="flex flex-col sm:flex-row items-end gap-2 p-3 bg-white border rounded-lg">
             <div class="w-full sm:flex-1"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Nama Bahan</label><input type="text" value="${ing.name}" oninput="updateHppIngredient(${i}, 'name', this.value)" class="w-full border rounded p-1.5 text-xs outline-none" placeholder="Cth: Kopi Susu"></div>
-            <div class="w-full sm:w-28"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Harga Beli Kemasan (Rp)</label><input type="number" value="${ing.price}" oninput="updateHppIngredient(${i}, 'price', this.value)" class="w-full border rounded p-1.5 text-xs text-right outline-none"></div>
-            <div class="w-full sm:w-24"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Ukuran Kemasan</label><input type="number" value="${ing.packSize}" oninput="updateHppIngredient(${i}, 'packSize', this.value)" step="any" class="w-full border rounded p-1.5 text-xs text-right outline-none" placeholder="gr/ml"></div>
-            <div class="w-full sm:w-24"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Takaran per Porsi</label><input type="number" value="${ing.portionSize}" oninput="updateHppIngredient(${i}, 'portionSize', this.value)" step="any" class="w-full border rounded p-1.5 text-xs text-right outline-none" placeholder="gr/ml"></div>
-            <div class="w-full sm:w-28 text-right pb-1"><span class="text-[10px] font-semibold text-gray-500 block">Biaya Bahan</span><span class="text-xs font-bold">${formatRp(Math.round(cost))}</span></div>
+            <div class="w-full sm:w-28"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Harga Beli Kemasan</label><input type="number" value="${ing.price||''}" oninput="updateHppIngredient(${i}, 'price', this.value)" class="w-full border rounded p-1.5 text-xs text-right outline-none"></div>
+            <div class="w-full sm:w-24"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Ukuran Kemasan</label><input type="number" value="${ing.packSize||''}" oninput="updateHppIngredient(${i}, 'packSize', this.value)" step="any" class="w-full border rounded p-1.5 text-xs text-right outline-none" placeholder="gr/ml"></div>
+            <div class="w-full sm:w-24"><label class="text-[10px] font-semibold text-gray-500 mb-1 block">Takaran per Porsi</label><input type="number" value="${ing.portionSize||''}" oninput="updateHppIngredient(${i}, 'portionSize', this.value)" step="any" class="w-full border rounded p-1.5 text-xs text-right outline-none" placeholder="gr/ml"></div>
+            <div class="w-full sm:w-28 text-right pb-1"><span class="text-[10px] font-semibold text-gray-500 block">Biaya Bahan</span><span id="hpp-cost-${i}" class="text-xs font-bold">${formatRp(Math.round(cost))}</span></div>
             <button onclick="removeHppIngredientRow(${i})" class="text-red-500 hover:text-white hover:bg-red-500 bg-red-50 p-2 rounded transition"><i class="fas fa-trash"></i></button>
           </div>`;
       }).join('');
-      currentCalculatedHpp = Math.round(total);
-      document.getElementById('hpp-calc-total').innerText = formatRp(currentCalculatedHpp);
+      recalculateHppTotals();
     }
     function applyHppToProduct() {
       document.getElementById('prod-hpp').value = currentCalculatedHpp || 0;
