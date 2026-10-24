@@ -98,7 +98,7 @@
     <!-- TAB 1: KASIR (POS) -->
     <div id="view-pos" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
-      <!-- Sisi Kiri: Katalog Produk (Bisa di-scroll bebas) -->
+      <!-- Sisi Kiri: Katalog Produk -->
       <div class="lg:col-span-2 flex flex-col space-y-4">
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row gap-3 justify-between items-center">
           <div class="relative w-full sm:w-64">
@@ -110,7 +110,7 @@
         <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 pb-20"></div>
       </div>
 
-      <!-- Sisi Kanan: Keranjang Pesanan (Sticky dengan Scroll Mandiri) -->
+      <!-- Sisi Kanan: Keranjang Pesanan -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-140px)] sticky top-20">
         <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl shrink-0">
           <h2 class="font-bold text-gray-700 flex items-center text-base">
@@ -119,7 +119,6 @@
           <button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700 font-medium">Reset</button>
         </div>
         
-        <!-- Input Nama Pelanggan Wajib (Required) -->
         <div class="px-4 pt-3 bg-gray-50 shrink-0">
           <label class="text-[11px] font-bold text-gray-600 block mb-1">
             <i class="fas fa-user mr-1 text-amber-700"></i> Nama Pelanggan / Meja <span class="text-red-500">*wajib</span>
@@ -147,7 +146,6 @@
       
       <!-- Baris Grafik -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Grafik Penjualan (Omset/Laba) -->
         <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 flex flex-col">
           <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 border-b pb-3">
             <div>
@@ -173,7 +171,6 @@
           <div class="relative h-72 w-full"><canvas id="salesChart"></canvas></div>
         </div>
 
-        <!-- Grafik Menu Terlaris -->
         <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 flex flex-col">
           <div class="border-b pb-3 flex justify-between items-start gap-2">
             <div>
@@ -251,14 +248,28 @@
 
     <!-- TAB 3: RIWAYAT SHIFT KASIR -->
     <div id="view-shift-history" class="hidden space-y-6 pb-12">
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h2 class="font-bold text-lg text-gray-800 flex items-center">
             <i class="fas fa-clock-rotate-left text-amber-700 mr-2"></i> Riwayat Shift Kasir
           </h2>
           <p class="text-xs text-gray-500">Arsip pembukaan shift, modal, total penjualan, dan selisih kas aktual</p>
         </div>
-        <div class="flex items-center gap-2">
+        <!-- Filter Shift Kasir (Hari, Bulan, Tahun) -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1 bg-gray-50 border rounded-lg px-2 py-1">
+            <span class="text-[11px] text-gray-500 font-semibold">Hari:</span>
+            <input type="date" id="filter-shift-date" onchange="renderShiftHistory()" class="text-xs bg-transparent focus:outline-none">
+            <button onclick="clearShiftDateFilter()" title="Reset Tanggal" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fas fa-times"></i></button>
+          </div>
+          <select id="filter-shift-month" onchange="renderShiftHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50">
+            <option value="all">Semua Bulan</option>
+            <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
+            <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
+            <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
+            <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
+          </select>
+          <select id="filter-shift-year" onchange="renderShiftHistory()" class="border rounded-lg text-sm px-3 py-1.5 bg-gray-50"></select>
           <button onclick="renderShiftHistory()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-3 py-2 rounded-lg font-semibold flex items-center shadow-sm">
             <i class="fas fa-sync-alt mr-1.5"></i> Refresh
           </button>
@@ -327,8 +338,7 @@
   </main>
 
   <!-- ======================= MODALS ======================= -->
-
-  <!-- Modal Pilih Metode Pembayaran -->
+  <!-- (Modal Lainnya Tetap Sama) -->
   <div id="payment-method-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
@@ -361,7 +371,6 @@
     </div>
   </div>
 
-  <!-- Modal Pembayaran QRIS Simulation -->
   <div id="qris-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
@@ -372,17 +381,14 @@
         <p class="text-xs text-gray-500 mb-1">Total Tagihan <span id="qris-customer-tag" class="font-semibold text-gray-800"></span></p>
         <h2 id="qris-total-amount" class="text-xl font-bold text-amber-800">Rp 0</h2>
       </div>
-      
       <div class="bg-white border-2 border-dashed border-gray-300 p-3 rounded-xl inline-block shadow-inner">
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=WARHOME_POS_PAYMENT_QRIS" alt="QRIS QR Code" class="w-44 h-44 mx-auto rounded">
         <div class="mt-2 text-[10px] text-gray-500 font-bold uppercase tracking-wider">NMID: ID1029384756382</div>
       </div>
-
       <div class="bg-blue-50 border border-blue-100 p-2.5 rounded-lg flex items-center justify-center space-x-2 text-xs text-blue-800">
         <i class="fas fa-clock animate-pulse"></i>
         <span>Menunggu Pembayaran: <strong id="qris-countdown">03:00</strong></span>
       </div>
-
       <div class="flex flex-col gap-2 pt-2 border-t">
         <button onclick="simulateQrisSuccess()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition flex items-center justify-center space-x-1.5">
           <i class="fas fa-check-circle"></i><span>Simulasi Pembayaran QRIS Sukses</span>
@@ -392,7 +398,6 @@
     </div>
   </div>
 
-  <!-- Modal Alert & Confirm -->
   <div id="alert-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-xs w-full p-6 shadow-2xl text-center space-y-4">
       <div id="alert-icon" class="text-4xl text-amber-600"><i class="fas fa-info-circle"></i></div>
@@ -415,7 +420,6 @@
     </div>
   </div>
 
-  <!-- Modal Buka / Tutup Sesi Kasir -->
   <div id="open-session-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
       <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">🚪 Buka Sesi Kasir</h3>
@@ -439,7 +443,6 @@
     </div>
   </div>
 
-  <!-- Modal Hapus / Edit Transaksi -->
   <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center space-x-3 text-red-600"><i class="fas fa-exclamation-triangle text-2xl"></i><h3 class="font-bold text-base text-gray-800">Hapus Transaksi</h3></div>
@@ -477,7 +480,6 @@
     </div>
   </div>
 
-  <!-- Modal Resi (Receipt) -->
   <div id="receipt-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div id="receipt-modal-card" class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col transition-all duration-200">
       <button onclick="closeModal('receipt-modal')" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl no-print">&times;</button>
@@ -521,7 +523,6 @@
     </div>
   </div>
 
-  <!-- Modal Tambah/Edit Menu (Produk) -->
   <div id="product-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
       <h3 id="product-modal-title" class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">Tambah Menu</h3>
@@ -562,27 +563,21 @@
     </div>
   </div>
 
-  <!-- MODAL KALKULATOR HPP -->
   <div id="hpp-calc-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center hidden p-4 no-print">
     <div class="bg-white rounded-xl max-w-3xl w-full p-6 shadow-2xl flex flex-col max-h-[95vh]">
       <div class="flex justify-between items-center border-b pb-2 mb-4">
         <h3 class="font-bold text-lg text-gray-800"><i class="fas fa-calculator text-blue-600 mr-2"></i> Kalkulator HPP (Harga Pokok Penjualan)</h3>
         <button onclick="closeModal('hpp-calc-modal')" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
       </div>
-      
       <p class="text-xs text-gray-500 mb-3">Rincikan bahan baku untuk 1 porsi menu ini. Total biaya akan diakumulasikan sebagai HPP (Modal) produk.</p>
-
       <div class="overflow-y-auto flex-1 mb-4 pr-1 space-y-2 scrollbar-hide" id="hpp-ingredients-container"></div>
-
       <button type="button" onclick="addHppIngredientRow()" class="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg border border-dashed border-blue-300 mb-4 transition flex justify-center items-center">
         <i class="fas fa-plus mr-1"></i> Tambah Bahan
       </button>
-
       <div class="border-t pt-3 flex justify-between items-center mb-4 bg-gray-50 p-3 rounded-lg border">
         <span class="font-bold text-sm text-gray-700">Total HPP per Porsi:</span>
         <span id="hpp-calc-total" class="font-bold text-xl text-red-600">Rp 0</span>
       </div>
-
       <div class="flex justify-end gap-2 pt-3 border-t">
         <button type="button" onclick="closeModal('hpp-calc-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">Batal</button>
         <button type="button" onclick="applyHppToProduct()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow"><i class="fas fa-check mr-1"></i> Terapkan HPP</button>
@@ -669,8 +664,18 @@
     }
     window.addEventListener('online', () => { syncLocalDataToCloud(); updateCloudBadge(); });
     window.addEventListener('offline', updateCloudBadge);
+
     window.addEventListener('DOMContentLoaded', () => {
         updateCloudBadge(); setPaperSize(currentPaperSize); checkSession(); renderProducts(); renderCart(); populateYearFilter(); renderCategoryFilters();
+        
+        // Set Default Tanggal Filter Transaksi ke Hari Ini (2026-10-24)
+        const todayStr = new Date().toISOString().split('T')[0];
+        const filterDateEl = document.getElementById('filter-date');
+        if(filterDateEl && !filterDateEl.value) filterDateEl.value = todayStr;
+        
+        const filterShiftDateEl = document.getElementById('filter-shift-date');
+        if(filterShiftDateEl && !filterShiftDateEl.value) filterShiftDateEl.value = todayStr;
+
         if(useFirebase && db) {
             db.ref('.info/connected').on('value', s => { if(s.val()===true) syncLocalDataToCloud(); updateCloudBadge(); });
             db.ref('products').on('value', s => { products = s.val() ? Object.values(s.val()).filter(Boolean) : []; localStorage.setItem('warhome_products', JSON.stringify(products)); renderProducts(); if(!document.getElementById('view-products').classList.contains('hidden')) renderProductTable(); });
@@ -690,7 +695,7 @@
       
       if(tab === 'pos') renderProducts();
       else if(tab === 'history') { populateYearFilter(); renderHistory(); initChart(); }
-      else if(tab === 'shift-history') renderShiftHistory();
+      else if(tab === 'shift-history') { populateYearFilter(); renderShiftHistory(); }
       else if(tab === 'products') renderProductTable();
     }
 
@@ -744,14 +749,28 @@
       localStorage.removeItem('warhome_session'); session = null; checkSession(); closeModal('close-session-modal');
       customAlert(`Sesi ditutup. Selisih kas: ${formatRp(closed.discrepancy)}`, "Sukses", "success");
     }
+
+    function clearShiftDateFilter() { document.getElementById('filter-shift-date').value = ''; renderShiftHistory(); }
     function renderShiftHistory() {
+      const dF = document.getElementById('filter-shift-date').value;
+      const mF = document.getElementById('filter-shift-month').value;
+      const yF = document.getElementById('filter-shift-year').value;
+
+      const filteredShifts = cashSessions.filter(cs => {
+        const d = new Date(cs.startTime);
+        const local = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        if(dF) return local === dF;
+        return (yF==='all'||d.getFullYear()===+yF) && (mF==='all'||d.getMonth()===+mF);
+      });
+
       const tbody = document.getElementById('shift-history-table-body');
-      document.getElementById('stat-total-shifts').innerText = `${cashSessions.length} Shift`;
-      document.getElementById('stat-total-shift-sales').innerText = formatRp(cashSessions.reduce((s, cs) => s + (cs.totalSales || 0), 0));
+      document.getElementById('stat-total-shifts').innerText = `${filteredShifts.length} Shift`;
+      document.getElementById('stat-total-shift-sales').innerText = formatRp(filteredShifts.reduce((s, cs) => s + (cs.totalSales || 0), 0));
       document.getElementById('stat-active-shift-status').innerText = session ? 'Aktif' : 'Tidak Aktif';
 
-      if(cashSessions.length === 0) return tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Belum ada riwayat shift.</td></tr>`;
-      tbody.innerHTML = cashSessions.map(cs => {
+      if(filteredShifts.length === 0) return tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Belum ada riwayat shift untuk periode ini.</td></tr>`;
+      
+      tbody.innerHTML = filteredShifts.map(cs => {
         const dColor = cs.discrepancy > 0 ? 'text-emerald-600' : (cs.discrepancy < 0 ? 'text-red-600' : 'text-gray-700');
         const dText = cs.discrepancy > 0 ? `+${formatRp(cs.discrepancy)}` : formatRp(cs.discrepancy);
         return `
@@ -899,9 +918,21 @@
     }
 
     function populateYearFilter() {
-      const y = document.getElementById('filter-year'), cur = new Date().getFullYear();
-      if(!y.innerHTML) { y.innerHTML = `<option value="all">Semua Thn</option>`; for(let i=cur; i>=cur-3; i--) y.innerHTML+=`<option value="${i}">${i}</option>`; }
+      const cur = new Date().getFullYear();
+      
+      const y = document.getElementById('filter-year');
+      if(y && !y.innerHTML.includes(cur)) { 
+        y.innerHTML = `<option value="all">Semua Thn</option>`; 
+        for(let i=cur; i>=cur-3; i--) y.innerHTML += `<option value="${i}">${i}</option>`; 
+      }
+
+      const sy = document.getElementById('filter-shift-year');
+      if(sy && !sy.innerHTML.includes(cur)) { 
+        sy.innerHTML = `<option value="all">Semua Thn</option>`; 
+        for(let i=cur; i>=cur-3; i--) sy.innerHTML += `<option value="${i}">${i}</option>`; 
+      }
     }
+    
     function clearDateFilter() { document.getElementById('filter-date').value = ''; renderHistory(); }
     function renderHistory() {
       const dF = document.getElementById('filter-date').value, mF = document.getElementById('filter-month').value, yF = document.getElementById('filter-year').value;
@@ -916,7 +947,7 @@
       document.getElementById('stat-monthly-items').innerText = `${filtered.reduce((s,t)=>s+(t.items?t.items.reduce((a,b)=>a+b.qty,0):0),0)} Item`;
       
       const tb = document.getElementById('history-table-body');
-      if(!filtered.length) tb.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Tidak ada data.</td></tr>`;
+      if(!filtered.length) tb.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400">Tidak ada data transaksi.</td></tr>`;
       else tb.innerHTML = filtered.map(t => {
         const p = t.profit!==undefined?t.profit:t.subtotal-(t.totalHpp||0);
         return `
